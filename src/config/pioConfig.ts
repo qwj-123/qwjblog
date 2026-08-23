@@ -11,16 +11,16 @@ export const pioConfig: PioConfig = {
 	hiddenOnMobile: true, // 默认在移动设备上隐藏
 	hideAboutMenu: false, // 隐藏内置 About 菜单按钮
 	dialog: {
-		welcome: "Welcome to Mizuki Website!", // 欢迎词
+		welcome: "欢迎来到 Mizuki 博客！", // 欢迎词
 		touch: [
-			"What are you doing?",
-			"Stop touching me!",
-			"HENTAI!",
-			"Don't bully me like that!",
+			"你在做什么呀？",
+			"不要一直戳我啦！",
+			"请保持礼貌哦！",
+			"不要这样欺负我嘛！",
 		], // 触摸提示
-		home: "Click here to go back to homepage!", // 首页提示
-		skin: ["Want to see my new outfit?", "The new outfit looks great~"], // 换装提示
-		close: "QWQ See you next time~", // 关闭提示
+		home: "点击这里返回首页！", // 首页提示
+		skin: ["想看看我的新装扮吗？", "这套新装扮很好看吧～"], // 换装提示
+		close: "QWQ 下次再见～", // 关闭提示
 		link: "https://github.com/LyraVoid/Mizuki", // 关于链接
 	},
 };

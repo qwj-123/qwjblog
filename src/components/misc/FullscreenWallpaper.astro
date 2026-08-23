@@ -241,6 +241,12 @@ const renderGroups = [
 		const STORAGE_KEY = 'mizuki_wallpaper_index';
 		const savedIndex = parseInt(sessionStorage.getItem(STORAGE_KEY) || '0');
 
+		// 用户是否手动关闭了壁纸轮播（固定单张）
+		var carouselDisabled = false;
+		try {
+			carouselDisabled = localStorage.getItem('bannerCarouselEnabled') === 'false';
+		} catch (e) {}
+
 		const groups = [
 			container.querySelectorAll('.hidden.md\\:block [data-carousel-item]'),
 			container.querySelectorAll('.block.md\\:hidden [data-carousel-item]')
@@ -279,6 +285,7 @@ const renderGroups = [
 		}
 
 		function start() {
+			if (carouselDisabled) return;
 			state.forEach(s => {
 				if (s.active && !s.timer) {
 					s.timer = setInterval(() => {
@@ -319,9 +326,23 @@ const renderGroups = [
 
 		document.addEventListener('visibilitychange', handleVisibilityChange);
 
+		// 响应设置面板的「壁纸轮播/固定」切换
+		var onBannerCarouselChange = function(e) {
+			var enabled = !!(e.detail && e.detail.enabled);
+			if (enabled) {
+				carouselDisabled = false;
+				start();
+			} else {
+				carouselDisabled = true;
+				stop();
+			}
+		};
+		window.addEventListener('banner-carousel-change', onBannerCarouselChange);
+
 		window.__wallpaper_cleanup = () => {
 			stop();
 			document.removeEventListener('visibilitychange', handleVisibilityChange);
+			window.removeEventListener('banner-carousel-change', onBannerCarouselChange);
 		};
 	}
 

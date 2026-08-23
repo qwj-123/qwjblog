@@ -60,7 +60,6 @@
 
 ### 📱 特別ページ
 
-- [x] **アニメページ** - ローカルデータ、Bangumi、Bilibili で視聴状況を管理
 - [x] **フレンドページ** - カードとタグで友人のサイトを紹介
 - [x] **日記ページ** - 文章、画像、場所、気分、タグ付きの記録を共有
 - [x] **アルバムページ** - ローカルまたは外部アルバムを管理し、任意で暗号化
@@ -134,7 +133,7 @@
 デプロイ前に、`src/config/siteConfig.ts` の `siteURL` を更新してください。
 `.env` や認証情報を Git にコミットしないでください。ホスティング環境では、プロバイダーの環境変数設定を使用します。
 
-`.env.example` には Bilibili のセッションデータや IndexNow の認証情報など、任意の設定も含まれます。必要な場合だけ設定し、ローカル環境またはホスティングプロバイダーの Secret に保存してください。実際の値はコミットしないでください。
+`.env.example` には IndexNow の認証情報など、任意の設定も含まれます。必要な場合だけ設定し、ローカル環境またはホスティングプロバイダーの Secret に保存してください。実際の値はコミットしないでください。
 
 ## 📝 コンテンツの執筆
 
@@ -184,7 +183,6 @@ export const siteConfig: SiteConfig = {
     fixed: false, // true で訪問者のテーマカラー選択を非表示
   },
   featurePages: {
-    anime: true,
     diary: true,
     friends: true,
     projects: true,
@@ -218,7 +216,6 @@ export const siteConfig: SiteConfig = {
 | :--- | :--- |
 | About | `src/content/spec/about.md` |
 | Friends | `src/content/spec/friends.md` と `src/data/friends.ts` |
-| Anime | `src/config/siteConfig.ts` でソースモードを設定、ローカルデータは `src/data/anime.ts` |
 | Diary | `src/data/diary.ts`、または `diaryApiUrl` の Memos エンドポイント |
 | Albums | `public/images/albums/`、各ローカルアルバムは `info.json` を使用 |
 | Projects | `src/data/projects.ts` |

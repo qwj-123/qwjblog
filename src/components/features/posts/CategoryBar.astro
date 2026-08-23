@@ -128,6 +128,15 @@ const archiveUrl = url("/archive/");
 		border-color: var(--primary);
 		opacity: 0.9;
 	}
+	:global(.dark) .category-pill {
+		color: rgb(255 255 255 / 0.92);
+	}
+	:global(.dark) .category-pill:hover {
+		color: color-mix(in srgb, var(--primary) 78%, white);
+	}
+	:global(.dark) .category-pill[data-active] {
+		color: white;
+	}
 </style>
 
 <script>

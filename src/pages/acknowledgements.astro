@@ -1,0 +1,162 @@
+---
+import { Icon } from "astro-icon/components";
+import { PageHeader } from "@components/features/page-header";
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+import { url } from "../utils/url-utils";
+
+const title = "致谢";
+const resources = [
+	{
+		label: "演示地址",
+		url: "https://mizuki.mysqil.com/",
+	},
+	{
+		label: "GitHub 仓库",
+		url: "https://github.com/matsuzaka-yuki/Mizuki",
+	},
+	{
+		label: "文档地址",
+		url: "https://docs.mizuki.mysqil.com/",
+	},
+];
+---
+
+<MainGridLayout
+	title={title}
+	description="感谢 Mizuki 模板作者及相关开源资料"
+>
+	<script>
+		import("../scripts/right-sidebar-layout.js");
+	</script>
+
+	<div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
+		<article class="acknowledgements-card card-base z-10 px-6 sm:px-9 py-6 relative w-full">
+			<PageHeader title={title} />
+
+			<div class="acknowledgements-content">
+				<p>该静态博客主要是借用了前辈的模板，在他的基础上进行了一些更改来完成的。在此感谢前辈！</p>
+				<p>教程及开源地址如下</p>
+				<p>Mizuki是一款基于Astro构建的现代静态博客模板，兼具丰富功能与优雅设计。本视频将带您了解Mizuki的核心内容、各类特色功能及自定义选项。</p>
+				<p>如果您对该主题感兴趣，可点击下方的GitHub仓库链接，按照README中的说明进行安装。若您喜欢这款主题，不妨为仓库点亮星标（Star）以示支持！这对我来说意义重大，非常感谢！</p>
+				<p>关于该主题的更多支持信息，务必查阅下方链接的官方文档。</p>
+				<p>如果您喜欢这段演示视频，欢迎点赞并订阅频道，后续将推出更多关于Mizuki及其他Web开发相关主题的视频内容！</p>
+
+				<div class="site-credit-card" aria-label="站点说明">
+					<p>
+						&copy; 2026 古人开智后的记事本. All Rights Reserved. /
+						<a href={url("rss/")}>RSS</a>
+						/
+						<a href={url("atom/")}>Atom</a>
+						/
+						<a href={url("sitemap-index.xml")} target="_blank" rel="noopener noreferrer">Sitemap</a>
+					</p>
+					<p>
+						Powered by
+						<a href="https://astro.build" target="_blank" rel="noopener noreferrer">Astro</a>
+						&
+						<a href="https://github.com/LyraVoid/Mizuki" target="_blank" rel="noopener noreferrer">Mizuki</a>
+						Version
+						<a href="https://github.com/LyraVoid/Mizuki" target="_blank" rel="noopener noreferrer">9.0</a>
+					</p>
+				</div>
+
+				<ul class="resource-list" aria-label="Mizuki 相关资源">
+					{resources.map((resource) => (
+						<li>
+							<a href={resource.url} target="_blank" rel="noopener noreferrer">
+								<span>{resource.label}</span>
+								<Icon name="material-symbols:open-in-new-rounded" />
+							</a>
+						</li>
+					))}
+				</ul>
+			</div>
+		</article>
+	</div>
+</MainGridLayout>
+
+<style>
+	@reference "tailwindcss";
+	@custom-variant dark (&:where(.dark, .dark *));
+
+	.acknowledgements-content {
+		max-width: 52rem;
+		margin-top: 0.75rem;
+		@apply text-black/75 dark:text-white/75;
+		font-size: 1rem;
+		line-height: 1.9;
+	}
+
+	.acknowledgements-content p + p {
+		margin-top: 1rem;
+	}
+
+	.site-credit-card {
+		margin-top: 1.5rem;
+		padding: 1rem 1.1rem;
+		border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--line-divider));
+		border-radius: 0.9rem;
+		background: color-mix(in srgb, var(--primary) 6%, transparent);
+	}
+
+	.site-credit-card p {
+		margin: 0;
+	}
+
+	.site-credit-card p + p {
+		margin-top: 0.5rem;
+	}
+
+	.site-credit-card a {
+		@apply text-black/90 dark:text-white/90;
+		font-weight: 650;
+		text-decoration: none;
+	}
+
+	.site-credit-card a:hover {
+		color: var(--primary);
+	}
+
+	.resource-list {
+		display: grid;
+		gap: 0.75rem;
+		margin: 1.75rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.resource-list a {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-height: 3.25rem;
+		padding: 0.75rem 1rem;
+		border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+		border-radius: 0.9rem;
+		background: color-mix(in srgb, var(--primary) 8%, transparent);
+		@apply text-black/90 dark:text-white/90;
+		font-weight: 650;
+		text-decoration: none;
+		transition:
+			transform 0.2s ease,
+			border-color 0.2s ease,
+			background-color 0.2s ease;
+	}
+
+	.resource-list a:hover {
+		transform: translateY(-2px);
+		border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+		background: color-mix(in srgb, var(--primary) 14%, transparent);
+	}
+
+	.resource-list a:focus-visible {
+		outline: 3px solid color-mix(in srgb, var(--primary) 55%, transparent);
+		outline-offset: 3px;
+	}
+
+	.resource-list :global(svg) {
+		flex: none;
+		color: var(--primary);
+		font-size: 1.2rem;
+	}
+</style>

@@ -417,6 +417,11 @@ const bannerFormats = getImageFormats();
 
 				var timerId = null;
 				var isPaused = false;
+				// 用户是否手动关闭了自动轮播（固定单张）
+				var carouselDisabled = false;
+				try {
+					carouselDisabled = localStorage.getItem('bannerCarouselEnabled') === 'false';
+				} catch (e) {}
 				var intervalStartTime = 0;
 				var remainingTime = 0;
 				var resumeTimerId = null;
@@ -428,7 +433,7 @@ const bannerFormats = getImageFormats();
 
 				function startCarousel(isFromResume) {
 					stopCarousel();
-					if (isPaused) return;
+					if (isPaused || carouselDisabled) return;
 
 					if (!isFromResume) {
 						applyInitialKB('banner-image-slot-mobile');
@@ -463,7 +468,7 @@ const bannerFormats = getImageFormats();
 					if (document.hidden) {
 						stopCarousel();
 						pauseKenBurns();
-					} else if (!isPaused) {
+					} else if (!isPaused && !carouselDisabled) {
 						resumeKenBurns();
 						if (remainingTime > 0) {
 							resumeTimerId = setTimeout(function() {
@@ -550,6 +555,7 @@ const bannerFormats = getImageFormats();
 
 				var onMouseLeave = function() {
 					isPaused = false;
+					if (carouselDisabled) return;
 					resumeKenBurns();
 					if (remainingTime > 0) {
 						resumeTimerId = setTimeout(function() {
@@ -574,7 +580,23 @@ const bannerFormats = getImageFormats();
 				container.addEventListener('mouseenter', onMouseEnter);
 				container.addEventListener('mouseleave', onMouseLeave);
 
-				startCarousel();
+				if (!carouselDisabled) {
+					startCarousel();
+				}
+
+				// 响应设置面板的「横幅轮播/固定」切换
+				var onBannerCarouselChange = function(e) {
+					var enabled = !!(e.detail && e.detail.enabled);
+					if (enabled) {
+						carouselDisabled = false;
+						startCarousel();
+					} else {
+						carouselDisabled = true;
+						stopCarousel();
+						pauseKenBurns();
+					}
+				};
+				window.addEventListener('banner-carousel-change', onBannerCarouselChange);
 
 				// 注册清理函数，供下次 Swup 导航或销毁时调用
 				window.__bannerCarouselCleanup = function() {
@@ -582,6 +604,7 @@ const bannerFormats = getImageFormats();
 					remainingTime = 0;
 					intervalStartTime = 0;
 					document.removeEventListener('visibilitychange', visibilityHandler);
+					window.removeEventListener('banner-carousel-change', onBannerCarouselChange);
 					if ('ontouchstart' in window) {
 						container.removeEventListener('touchstart', onTouchStart);
 						container.removeEventListener('touchmove', onTouchMove);

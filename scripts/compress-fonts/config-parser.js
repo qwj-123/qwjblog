@@ -68,37 +68,6 @@ export function getFontConfigs() {
 }
 
 /**
- * 检查番剧页面是否启用
- */
-export function isAnimePageEnabled() {
-	const content = readSiteConfig();
-	const match = content.match(/featurePages:\s*\{([\s\S]*?)\}/);
-	if (!match) return false;
-	const animeMatch = match[1].match(/anime:\s*(true|false)/);
-	return animeMatch ? animeMatch[1] === "true" : false;
-}
-
-/**
- * 获取番剧模式
- */
-export function getAnimeMode() {
-	const content = readSiteConfig();
-	const match = content.match(/anime:\s*\{[\s\S]*?mode:\s*["']([^"']+)["']/);
-	return match ? match[1] : "bangumi";
-}
-
-/**
- * 获取 Bangumi 用户 ID
- */
-export function getBangumiUserId() {
-	const content = readSiteConfig();
-	const match = content.match(
-		/bangumi:\s*\{[\s\S]*?userId:\s*["']([^"']+)["']/,
-	);
-	return match ? match[1] : null;
-}
-
-/**
  * 获取音乐播放器配置（从 musicConfig.ts 读取）
  */
 export function getMusicConfig() {
@@ -142,9 +111,6 @@ export function getConfig() {
 	return {
 		lang: getLang(),
 		fonts: getFontConfigs(),
-		animeEnabled: isAnimePageEnabled(),
-		animeMode: getAnimeMode(),
-		bangumiUserId: getBangumiUserId(),
 		musicConfig: getMusicConfig(),
 	};
 }

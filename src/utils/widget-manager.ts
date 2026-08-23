@@ -15,6 +15,8 @@ export const WIDGET_COMPONENT_MAP = {
 	tags: "../components/widgets/tags/Tags.astro",
 	toc: "../components/widgets/toc/TOC.astro",
 	"card-toc": "../components/widgets/card-toc/CardTOC.astro",
+	acknowledgements:
+		"../components/widgets/acknowledgements/Acknowledgements.astro",
 	"music-player": "../components/widgets/music-player/MusicPlayer.svelte",
 	"music-sidebar":
 		"../components/widgets/music-sidebar/MusicSidebarWidget.astro",

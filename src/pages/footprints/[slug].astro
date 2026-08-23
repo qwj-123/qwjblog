@@ -1,0 +1,336 @@
+---
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { Icon } from "astro-icon/components";
+
+import { footprintEntries, type FootprintEntry } from "../../data/footprints";
+
+export function getStaticPaths() {
+	return footprintEntries.map((entry) => ({
+		params: { slug: entry.slug },
+		props: { entry },
+	}));
+}
+
+interface Props {
+	entry: FootprintEntry;
+}
+
+const { entry } = Astro.props;
+---
+
+<MainGridLayout title={`${entry.city}足迹`} description={entry.summary}>
+	<script>
+		import("../../scripts/right-sidebar-layout.js");
+	</script>
+
+	<article class="footprint-detail card-base">
+		<a class="back-link" href="/footprints/">
+			<Icon name="material-symbols:arrow-back-rounded" />
+			返回足迹地图
+		</a>
+
+		<header class="detail-header">
+			<div class="detail-location">
+				<Icon name="material-symbols:location-on-rounded" />
+				<span>{entry.province} · {entry.city}</span>
+			</div>
+			<h1>{entry.city}</h1>
+			<p>{entry.summary}</p>
+			<div class="detail-meta">
+				<span>{entry.status}</span>
+				<span>{entry.period}</span>
+			</div>
+		</header>
+
+		<section class="story-section" aria-labelledby="story-title">
+			<div class="section-title">
+				<Icon name="material-symbols:auto-stories-rounded" />
+				<div>
+					<span>城市片段</span>
+					<h2 id="story-title">在深圳生活的日子</h2>
+				</div>
+			</div>
+			<div class="story-copy">
+				{entry.story.map((paragraph) => <p>{paragraph}</p>)}
+			</div>
+			<ul class="highlight-list" aria-label="深圳印象">
+				{entry.highlights.map((highlight) => <li>{highlight}</li>)}
+			</ul>
+		</section>
+
+		<section class="photo-section" aria-labelledby="photo-title">
+			<div class="section-title">
+				<Icon name="material-symbols:photo-library-rounded" />
+				<div>
+					<span>影像记录</span>
+					<h2 id="photo-title">深圳相片</h2>
+				</div>
+			</div>
+			<div class="photo-grid">
+				{
+					entry.photos.map((photo, index) => (
+						<figure class="photo-card">
+							{photo.src ? (
+								<a
+									href={photo.src}
+									data-fancybox={`footprint-${entry.slug}`}
+									data-no-swup="true"
+									aria-label={`查看大图：${photo.alt}`}
+								>
+									<img
+										src={photo.src}
+										alt={photo.alt}
+										width="1800"
+										height="1350"
+										loading="lazy"
+										decoding="async"
+									/>
+								</a>
+							) : (
+								<div class="photo-placeholder" role="img" aria-label={photo.alt}>
+									<Icon name="material-symbols:add-photo-alternate-outline-rounded" />
+									<strong>照片位置 {String(index + 1).padStart(2, "0")}</strong>
+									<span>等待添加你的深圳照片</span>
+								</div>
+							)}
+						</figure>
+					))
+				}
+			</div>
+		</section>
+	</article>
+</MainGridLayout>
+
+<style>
+	.footprint-detail {
+		padding: clamp(1.25rem, 4vw, 2.5rem);
+		border-radius: var(--radius-large);
+		overflow: hidden;
+	}
+
+	.back-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		min-height: 2.75rem;
+		color: var(--text-50);
+		font-size: 0.82rem;
+		text-decoration: none;
+	}
+
+	.back-link:hover,
+	.back-link:focus-visible {
+		color: var(--primary);
+		outline: none;
+	}
+
+	.detail-header {
+		position: relative;
+		margin-top: 0.75rem;
+		padding: clamp(1.35rem, 5vw, 3rem);
+		border-radius: var(--radius-large);
+		background:
+			radial-gradient(circle at 78% 22%, color-mix(in srgb, var(--primary) 32%, transparent), transparent 32%),
+			linear-gradient(135deg, color-mix(in srgb, var(--primary) 18%, var(--card-bg)), var(--card-bg));
+		border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--line-divider));
+	}
+
+	.detail-location {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		color: var(--primary);
+		font-size: 0.82rem;
+		font-weight: 700;
+	}
+
+	.detail-location :global(svg) {
+		font-size: 1.2rem;
+	}
+
+	h1 {
+		margin: 0.4rem 0;
+		font-size: clamp(2.6rem, 10vw, 5rem);
+		line-height: 1;
+		letter-spacing: -0.05em;
+	}
+
+	.detail-header > p {
+		max-width: 34rem;
+		margin: 0.9rem 0 0;
+		color: var(--text-50);
+		line-height: 1.75;
+	}
+
+	.detail-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.55rem;
+		margin-top: 1.25rem;
+	}
+
+	.detail-meta span {
+		padding: 0.35rem 0.7rem;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--primary) 13%, var(--card-bg));
+		color: var(--primary);
+		font-size: 0.75rem;
+		font-weight: 700;
+	}
+
+	.story-section,
+	.photo-section {
+		margin-top: 2rem;
+	}
+
+	.section-title {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		margin-bottom: 1rem;
+	}
+
+	.section-title > :global(svg) {
+		padding: 0.6rem;
+		box-sizing: content-box;
+		border-radius: 0.9rem;
+		background: color-mix(in srgb, var(--primary) 12%, transparent);
+		color: var(--primary);
+		font-size: 1.35rem;
+	}
+
+	.section-title span {
+		color: var(--primary);
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+	}
+
+	h2 {
+		margin: 0.1rem 0 0;
+		font-size: 1.3rem;
+	}
+
+	.story-copy {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	.story-copy p {
+		margin: 0;
+		padding: 1rem;
+		border-left: 3px solid var(--primary);
+		border-radius: 0 var(--radius-large) var(--radius-large) 0;
+		background: color-mix(in srgb, var(--primary) 5%, var(--card-bg));
+		color: var(--text-70);
+		line-height: 1.8;
+	}
+
+	.highlight-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.55rem;
+		margin: 1rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.highlight-list li {
+		padding: 0.42rem 0.75rem;
+		border: 1px solid var(--line-divider);
+		border-radius: 999px;
+		font-size: 0.75rem;
+		color: var(--text-50);
+	}
+
+	.photo-hint {
+		margin: -0.35rem 0 1rem;
+		color: var(--text-50);
+		font-size: 0.78rem;
+		line-height: 1.65;
+	}
+
+	.photo-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.85rem;
+	}
+
+	.photo-card {
+		margin: 0;
+		min-width: 0;
+		overflow: hidden;
+		border: 1px solid var(--line-divider);
+		border-radius: var(--radius-large);
+		background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+	}
+
+	.photo-card img,
+	.photo-placeholder {
+		display: block;
+		width: 100%;
+		aspect-ratio: 4 / 3;
+	}
+
+	.photo-card a {
+		display: block;
+		cursor: zoom-in;
+		text-decoration: none;
+	}
+
+	.photo-card img {
+		object-fit: cover;
+		transition: transform 0.3s ease;
+	}
+
+	.photo-card a:hover img {
+		transform: scale(1.04);
+	}
+
+	.photo-placeholder {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.3rem;
+		padding: 1rem;
+		background:
+			linear-gradient(135deg, color-mix(in srgb, var(--primary) 7%, transparent), transparent),
+			repeating-linear-gradient(135deg, transparent 0 12px, color-mix(in srgb, var(--text-20) 16%, transparent) 12px 13px);
+		color: var(--text-30);
+		text-align: center;
+	}
+
+	.photo-placeholder :global(svg) {
+		font-size: 2rem;
+		color: var(--primary);
+	}
+
+	.photo-placeholder strong {
+		font-size: 0.82rem;
+		color: var(--text-70);
+	}
+
+	.photo-placeholder span,
+	.photo-card figcaption {
+		font-size: 0.7rem;
+	}
+
+	.photo-card figcaption {
+		padding: 0.7rem 0.85rem;
+		color: var(--text-50);
+	}
+
+	@media (max-width: 700px) {
+		.story-copy,
+		.photo-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.photo-card img,
+		.photo-placeholder {
+			aspect-ratio: 16 / 10;
+		}
+	}
+</style>

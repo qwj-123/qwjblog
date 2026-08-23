@@ -9,6 +9,7 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import Icon from "@iconify/svelte";
 import {
+	getDefaultBannerCarouselEnabled,
 	getDefaultBannerTitleEnabled,
 	getDefaultHue,
 	getDefaultOverlayBlur,
@@ -18,6 +19,7 @@ import {
 	getDefaultUltrawidePostLayout,
 	getDefaultWavesEnabled,
 	getHue,
+	getStoredBannerCarouselEnabled,
 	getStoredBannerTitleEnabled,
 	getStoredOverlayBlur,
 	getStoredOverlayCardOpacity,
@@ -26,6 +28,7 @@ import {
 	getStoredUltrawidePostLayout,
 	getStoredWallpaperMode,
 	getStoredWavesEnabled,
+	setBannerCarouselEnabled,
 	setBannerTitleEnabled,
 	setHue,
 	setOverlayBlur,
@@ -78,6 +81,9 @@ const isWavesSwitchable =
 const isBannerTitleSwitchable =
 	(siteConfig.banner?.homeText?.enable ?? false) &&
 	(siteConfig.banner?.homeText?.switchable ?? false);
+const isBannerCarouselSwitchable =
+	(siteConfig.banner?.carousel?.enable ?? false) &&
+	(siteConfig.banner?.carousel?.switchable ?? false);
 const hasBannerSettings = isWavesSwitchable || isBannerTitleSwitchable;
 
 const isSakuraSwitchable =
@@ -121,6 +127,7 @@ let wavesEnabled = $state(getDefaultWavesEnabled());
 const defaultWavesEnabled = getDefaultWavesEnabled();
 let bannerTitleEnabled = $state(getDefaultBannerTitleEnabled());
 const defaultBannerTitleEnabled = getDefaultBannerTitleEnabled();
+let bannerCarouselEnabled = $state(getDefaultBannerCarouselEnabled());
 let sakuraEnabled = $state(getDefaultSakuraEnabled());
 const defaultSakuraEnabled = getDefaultSakuraEnabled();
 let ultrawidePostLayout = $state(getDefaultUltrawidePostLayout());
@@ -201,6 +208,11 @@ function toggleBannerTitleEnabled() {
 	setBannerTitleEnabled(bannerTitleEnabled);
 }
 
+function toggleBannerCarouselEnabled() {
+	bannerCarouselEnabled = !bannerCarouselEnabled;
+	setBannerCarouselEnabled(bannerCarouselEnabled);
+}
+
 function toggleSakuraEnabled() {
 	sakuraEnabled = !sakuraEnabled;
 	setSakuraEnabled(sakuraEnabled);
@@ -260,6 +272,7 @@ onMount(() => {
 	overlayCardOpacity = getStoredOverlayCardOpacity();
 	wavesEnabled = getStoredWavesEnabled();
 	bannerTitleEnabled = getStoredBannerTitleEnabled();
+	bannerCarouselEnabled = getStoredBannerCarouselEnabled();
 	sakuraEnabled = getStoredSakuraEnabled();
 	ultrawidePostLayout = getStoredUltrawidePostLayout();
 
@@ -432,6 +445,23 @@ $effect(() => {
 						<Icon icon="material-symbols:check-circle" class="text-[1rem] shrink-0 text-(--primary)" />
 					{/if}
 				</button>
+				{#if isBannerCarouselSwitchable}
+				<button
+					class="w-full btn-regular rounded-md py-2 px-3 flex items-center gap-3 text-left active:scale-95 transition-all relative overflow-hidden"
+					class:bg-(--btn-regular-bg-hover)={bannerCarouselEnabled}
+					onclick={toggleBannerCarouselEnabled}
+				>
+					<Icon icon="material-symbols:auto-awesome-motion" class="text-[1.25rem] shrink-0" />
+					<span class="text-sm flex-1">{i18n(I18nKey.bannerCarousel)}</span>
+					<div class="w-10 h-5 rounded-full transition-all duration-200 relative"
+						class:bg-(--primary)={bannerCarouselEnabled}
+						class:bg-(--btn-regular-bg-active)={!bannerCarouselEnabled}>
+						<div class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200"
+							class:left-0.5={!bannerCarouselEnabled}
+							class:left-5={bannerCarouselEnabled}></div>
+					</div>
+				</button>
+				{/if}
 			</div>
 		</div>
 	{/if}

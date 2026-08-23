@@ -1,0 +1,86 @@
+---
+import { Icon } from "astro-icon/components";
+import { url } from "../../../utils/url-utils";
+
+interface Props {
+	class?: string;
+	style?: string;
+}
+
+const className = Astro.props.class;
+const style = Astro.props.style;
+---
+
+<a
+	id="acknowledgements"
+	href={url("/acknowledgements/")}
+	aria-label="前往致谢页面"
+	class:list={[
+		"acknowledgements-link card-base group",
+		className,
+	]}
+	style={style}
+>
+	<span class="acknowledgements-title">致谢</span>
+	<Icon
+		name="material-symbols:arrow-forward-ios-rounded"
+		class="acknowledgements-arrow"
+	/>
+</a>
+
+<style>
+	@reference "tailwindcss";
+	@custom-variant dark (&:where(.dark, .dark *));
+
+	.acknowledgements-link {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-height: 4.25rem;
+		padding: 1rem 1.25rem;
+		text-decoration: none;
+		transition:
+			transform 0.2s ease,
+			border-color 0.2s ease,
+			background-color 0.2s ease;
+	}
+
+	.acknowledgements-link:hover {
+		transform: translateY(-2px);
+		border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+	}
+
+	.acknowledgements-link:focus-visible {
+		outline: 3px solid color-mix(in srgb, var(--primary) 55%, transparent);
+		outline-offset: 3px;
+	}
+
+	.acknowledgements-title {
+		position: relative;
+		padding-left: 1.15rem;
+		@apply text-black/90 dark:text-white/90;
+		font-size: 1.1rem;
+		font-weight: 700;
+	}
+
+	.acknowledgements-title::before {
+		position: absolute;
+		top: 0.18rem;
+		bottom: 0.18rem;
+		left: 0;
+		width: 0.22rem;
+		border-radius: 999px;
+		background: var(--primary);
+		content: "";
+	}
+
+	.acknowledgements-arrow {
+		color: var(--primary);
+		font-size: 1.25rem;
+		transition: transform 0.2s ease;
+	}
+
+	.acknowledgements-link:hover .acknowledgements-arrow {
+		transform: translateX(0.2rem);
+	}
+</style>

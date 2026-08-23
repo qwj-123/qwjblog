@@ -1,0 +1,52 @@
+---
+import userChinaMapSvg from "../assets/maps/china-map-user.svg?raw";
+import { Icon } from "astro-icon/components";
+
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+import { footprintEntries } from "../data/footprints";
+
+const entry = footprintEntries[0];
+const title = "我的足迹";
+const subtitle = "把地图留给旅途本身，点亮每一座真正抵达的城市。";
+---
+
+<MainGridLayout title={title} description={subtitle}>
+	<script>
+		import("../scripts/right-sidebar-layout.js");
+	</script>
+
+	<section class="footprints-shell card-base" aria-labelledby="footprints-title">
+		<header class="footprints-intro">
+			<div>
+				<div class="eyebrow">
+					<Icon name="material-symbols:travel-explore" />
+					<span>旅行记录</span>
+				</div>
+				<h1 id="footprints-title">{title}</h1>
+			</div>
+			<div class="footprint-summary" aria-label="足迹统计">
+				<span><strong>1</strong> 座城市</span>
+				<span><strong>1</strong> 篇记录</span>
+			</div>
+		</header>
+
+		<div id="footprint-experience" class="map-experience">
+			<div class="map-viewport" aria-label="中国足迹地图，台湾及南海诸岛示意完整显示">
+				<div class="map-zoom-layer">
+					<div class="user-china-map" set:html={userChinaMapSvg}></div>
+					<a
+						id="shenzhen-map-marker"
+						class="city-marker"
+						href="/footprints/shenzhen/"
+						aria-label="查看深圳足迹"
+					>
+						<span class="marker-pulse" aria-hidden="true"></span>
+						<span class="marker-core" aria-hidden="true">
+							<Icon name="material-symbols:location-on-rounded" />
+						</span>
+					</a>
+				</div>
+			</div>
+		</div>
+	</section>
+</MainGridLayout>

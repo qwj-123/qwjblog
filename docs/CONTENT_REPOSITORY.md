@@ -16,7 +16,6 @@ Mizuki-Content/
 │   ├── about.md
 │   └── friends.md
 ├── data/               # 数据文件
-│   ├── anime.ts
 │   ├── projects.ts
 │   ├── skills.ts
 │   └── timeline.ts
@@ -198,9 +197,6 @@ pnpm run sync-content
 ```
 
 ## 📦 数据文件说明
-
-### anime.ts
-番剧数据配置,包含你观看的动画列表。
 
 ### projects.ts
 项目展示数据,展示你的作品集。

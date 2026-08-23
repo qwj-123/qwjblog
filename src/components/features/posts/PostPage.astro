@@ -1,6 +1,7 @@
 ---
 import { siteConfig } from "../../../config";
 import { widgetManager } from "../../../utils/widget-manager";
+import EmptyState from "./EmptyState.astro";
 import PostCard from "./PostCard.astro";
 import type { PostPageProps } from "./types";
 
@@ -22,13 +23,17 @@ const initialLayoutClass = defaultLayout === "grid" ? "grid-mode" : "list-mode";
 	data-both-sidebars={hasRightSidebars}
 >
 	{
-		page.data.map((entry, index) => (
-			<PostCard
-				entry={entry}
-				class:list="onload-animation"
-				style={`--i: ${index}; --interval: 50ms;`}
-			/>
-		))
+		page.data.length === 0 ? (
+			<EmptyState />
+		) : (
+			page.data.map((entry, index) => (
+				<PostCard
+					entry={entry}
+					class:list="onload-animation"
+					style={`--i: ${index}; --interval: 50ms;`}
+				/>
+			))
+		)
 	}
 </div>
 

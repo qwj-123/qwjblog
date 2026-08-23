@@ -1,23 +1,8 @@
 ---
+import { siteTags } from "../../../data/tags";
 import I18nKey from "../../../i18n/i18nKey";
 import { i18n } from "../../../i18n/translation";
-import { getTagList } from "../../../utils/content-utils";
-import { getTagUrl } from "../../../utils/url-utils";
-import { widgetManager } from "../../../utils/widget-manager";
-import ButtonTag from "../../control/ButtonTag.astro";
 import WidgetLayout from "../common/WidgetLayout.astro";
-
-const tags = await getTagList();
-
-const COLLAPSED_HEIGHT = "7.5rem";
-
-// 使用统一的组件管理器检查是否应该折叠
-const tagsComponent = widgetManager
-	.getConfig()
-	.properties.find((p) => p.type === "tags");
-const isCollapsed = tagsComponent
-	? widgetManager.isCollapsed(tagsComponent, tags.length)
-	: false;
 
 interface Props {
 	class?: string;
@@ -30,21 +15,41 @@ const style = Astro.props.style;
 <WidgetLayout
 	name={i18n(I18nKey.tags)}
 	id="tags"
-	isCollapsed={isCollapsed}
-	collapsedHeight={COLLAPSED_HEIGHT}
 	class={className}
 	style={style}
 >
-	<div class="flex gap-2 flex-wrap">
+	<ul class="static-tag-list" aria-label="站点标签">
 		{
-			tags.map((t) => (
-				<ButtonTag
-					href={getTagUrl(t.name)}
-					label={`View all posts with the ${t.name.trim()} tag`}
-				>
-					{t.name.trim()}
-				</ButtonTag>
-			))
+			siteTags.map((tag) => <li class="static-tag">{tag}</li>)
 		}
-	</div>
+	</ul>
 </WidgetLayout>
+
+<style>
+	.static-tag-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.static-tag {
+		display: inline-flex;
+		align-items: center;
+		min-height: 2rem;
+		padding: 0.25rem 0.75rem;
+		border-radius: 0.5rem;
+		background: var(--btn-regular-bg);
+		color: var(--btn-content);
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		cursor: default;
+		user-select: none;
+	}
+
+	:global(.dark) .static-tag {
+		color: rgb(255 255 255 / 0.88);
+	}
+</style>

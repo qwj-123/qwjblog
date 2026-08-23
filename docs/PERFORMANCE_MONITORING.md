@@ -82,8 +82,7 @@ node scripts/performance-baseline.js --update
       "numberOfRuns": 3,
       "url": [
         "http://localhost:4321/",
-        "http://localhost:4321/about/",
-        "http://localhost:4321/anime/"
+        "http://localhost:4321/about/"
       ]
     },
     "assert": {
@@ -222,7 +221,6 @@ npx lhci autorun --verbose
 "url": [
   "http://localhost:4321/",
   "http://localhost:4321/about/",
-  "http://localhost:4321/anime/",
   "http://localhost:4321/new-page/"  // 新页面
 ]
 ```

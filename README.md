@@ -60,7 +60,6 @@ Get started quickly with our comprehensive documentation. Whether you're customi
 
 ### 📱 Special Pages
 
-- [x] **Anime Page** - Track anime watching progress using local data, Bangumi, or Bilibili sources
 - [x] **Friends Page** - Showcase friend websites with cards and tags
 - [x] **Diary Page** - Share moments with text, images, locations, moods, and tags
 - [x] **Albums Page** - Organize local or external photo albums with optional encryption
@@ -135,7 +134,7 @@ Deploy your blog to any static hosting platform:
 
 Before deployment, update `siteURL` in `src/config/siteConfig.ts`. Do not commit `.env` or credentials to Git. For hosted builds, configure environment variables in the hosting provider instead.
 
-The optional `.env.example` settings include Bilibili session data and IndexNow credentials. Only configure them when needed, keep them in local or hosting-provider secrets, and never commit real values.
+The optional `.env.example` settings include IndexNow credentials. Only configure them when needed, keep them in local or hosting-provider secrets, and never commit real values.
 
 ## 📝 Writing Content
 
@@ -189,7 +188,6 @@ export const siteConfig: SiteConfig = {
     fixed: false, // Hide the visitor theme-color picker when true
   },
   featurePages: {
-    anime: true,
     diary: true,
     friends: true,
     projects: true,
@@ -223,7 +221,6 @@ The page switches are controlled by `siteConfig.featurePages`. Page content and 
 | :--- | :--- |
 | About | `src/content/spec/about.md` |
 | Friends | `src/content/spec/friends.md` and `src/data/friends.ts` |
-| Anime | `src/config/siteConfig.ts` for the source mode; `src/data/anime.ts` for local data |
 | Diary | `src/data/diary.ts`, or a Memos endpoint configured by `diaryApiUrl` |
 | Albums | `public/images/albums/`; each local album uses an `info.json` file |
 | Projects | `src/data/projects.ts` |

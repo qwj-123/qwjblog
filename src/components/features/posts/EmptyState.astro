@@ -1,0 +1,69 @@
+---
+interface Props {
+	class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+---
+
+<div
+	class:list={[
+		"flex flex-col items-center justify-center gap-10 py-10",
+		className,
+	]}
+>
+	<div class="thought-bubble">
+		<span class="thought-text">这里空空如也，快来添加吧</span>
+		<span class="dot dot-1"></span>
+		<span class="dot dot-2"></span>
+		<span class="dot dot-3"></span>
+	</div>
+	<img
+		src="/assets/empty-state/mascot.png"
+		alt=""
+		class="w-28 h-auto max-w-full select-none pointer-events-none"
+		loading="lazy"
+	/>
+</div>
+
+<style>
+	@reference "tailwindcss";
+	@custom-variant dark (&:where(.dark, .dark *));
+
+	.thought-bubble {
+		position: relative;
+		@apply flex items-center justify-center rounded-3xl px-6 py-3 text-neutral-700 dark:text-neutral-300;
+		background: var(--card-bg);
+		box-shadow: 0 6px 20px rgb(0 0 0 / 0.1);
+	}
+
+	.thought-text {
+		@apply text-sm font-medium whitespace-nowrap;
+	}
+
+	.dot {
+		position: absolute;
+		left: 50%;
+		transform: translateX(-50%);
+		border-radius: 50%;
+		background: var(--card-bg);
+	}
+
+	.dot-1 {
+		bottom: -8px;
+		width: 12px;
+		height: 12px;
+	}
+
+	.dot-2 {
+		bottom: -18px;
+		width: 8px;
+		height: 8px;
+	}
+
+	.dot-3 {
+		bottom: -25px;
+		width: 5px;
+		height: 5px;
+	}
+</style>

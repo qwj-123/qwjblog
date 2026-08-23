@@ -38,7 +38,7 @@ cat > README.md << 'EOF'
 
 - `posts/` - 博客文章
 - `spec/` - 特殊页面 (关于、友链等)
-- `data/` - 数据文件 (番剧、项目、技能、时间线)
+- `data/` - 数据文件 (项目、技能、时间线)
 - `images/` - 图片资源
 
 ## 使用方法
@@ -63,7 +63,6 @@ cp -r "$MIZUKI_PATH/src/content/posts/"* "$CONTENT_PATH/posts/"
 cp -r "$MIZUKI_PATH/src/content/spec/"* "$CONTENT_PATH/spec/"
 
 # 复制数据文件
-cp "$MIZUKI_PATH/src/data/anime.ts" "$CONTENT_PATH/data/" 2>/dev/null || echo "anime.ts not found"
 cp "$MIZUKI_PATH/src/data/projects.ts" "$CONTENT_PATH/data/" 2>/dev/null || echo "projects.ts not found"
 cp "$MIZUKI_PATH/src/data/skills.ts" "$CONTENT_PATH/data/" 2>/dev/null || echo "skills.ts not found"
 cp "$MIZUKI_PATH/src/data/timeline.ts" "$CONTENT_PATH/data/" 2>/dev/null || echo "timeline.ts not found"
@@ -142,7 +141,7 @@ cp -r public/images ../mizuki-content-backup/
 # 删除已迁移的内容 (保留目录结构)
 rm -rf src/content/posts/*
 rm -rf src/content/spec/*
-rm -f src/data/anime.ts src/data/projects.ts src/data/skills.ts src/data/timeline.ts
+rm -f src/data/projects.ts src/data/skills.ts src/data/timeline.ts
 rm -rf public/images/albums/* public/images/diary/*
 
 # 创建 .gitkeep 文件保留目录
@@ -174,7 +173,7 @@ pnpm dev
 # - 文章是否正常显示
 # - 图片是否正确加载
 # - 特殊页面是否工作
-# - 数据页面是否正常 (番剧、项目等)
+# - 数据页面是否正常 (项目等)
 ```
 
 ### 构建测试

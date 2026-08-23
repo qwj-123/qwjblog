@@ -60,7 +60,6 @@
 
 ### 📱 特色頁面
 
-- [x] **追番頁面** - 使用本地資料、Bangumi 或 Bilibili 追蹤動畫
 - [x] **友鏈頁面** - 使用卡片和標籤展示友鏈
 - [x] **日記頁面** - 分享帶有文字、圖片、位置、心情和標籤的動態
 - [x] **相簿頁面** - 管理本地或外部相簿，並支援可選加密
@@ -134,7 +133,7 @@
 部署前，請在 `src/config/siteConfig.ts` 中更新 `siteURL`。
 不要將 `.env` 或憑據提交到 Git；託管構建請在平台的環境變數設定中配置。
 
-`.env.example` 中還包含 Bilibili 會話資料和 IndexNow 憑據等可選設定。只在需要時設定，並放在本地環境或託管平台 Secret 中，切勿提交真實值。
+`.env.example` 中還包含 IndexNow 憑據等可選設定。只在需要時設定，並放在本地環境或託管平台 Secret 中，切勿提交真實值。
 
 ## 📝 內容編寫
 
@@ -184,7 +183,6 @@ export const siteConfig: SiteConfig = {
     fixed: false, // 為 true 時隱藏訪客的主題色選擇器
   },
   featurePages: {
-    anime: true,
     diary: true,
     friends: true,
     projects: true,
@@ -218,7 +216,6 @@ export const siteConfig: SiteConfig = {
 | :--- | :--- |
 | 關於 | `src/content/spec/about.md` |
 | 友鏈 | `src/content/spec/friends.md` 和 `src/data/friends.ts` |
-| 追番 | `src/config/siteConfig.ts` 設定資料來源模式；本地資料在 `src/data/anime.ts` |
 | 日記 | `src/data/diary.ts`，或在 `diaryApiUrl` 中配置 Memos 地址 |
 | 相簿 | `public/images/albums/`；每個本地相簿使用 `info.json` |
 | 專案 | `src/data/projects.ts` |

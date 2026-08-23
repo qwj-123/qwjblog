@@ -2,8 +2,8 @@
 
 /* 导入相册样式 */
 @import "./albums.css";
-/* 导入追番页面样式 */
-@import "./anime.css";
+/* 足迹页面样式放在全局入口，确保 Swup 站内跳转时不会丢失 */
+@import "./footprints.css";
 @import "./animation-enhancements.css";
 /* 导入渐变按钮样式 */
 @import "./gradient-buttons.css";

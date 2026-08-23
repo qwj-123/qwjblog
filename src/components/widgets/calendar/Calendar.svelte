@@ -16,7 +16,6 @@ import MonthPicker from "./components/MonthPicker.svelte";
 import YearPicker from "./components/YearPicker.svelte";
 import {
 	formatDateKey,
-	formatMonthKey,
 	getCurrentPostId,
 	getDaysInMonth,
 	getFirstDayOfMonth,
@@ -39,7 +38,6 @@ const { monthNames, weekDays, yearSuffix }: Props = $props();
 // State
 let allPostsData: CalendarPost[] = $state([]);
 let postDateMap: Record<string, CalendarPost[]> = $state({});
-let postsByMonth: Record<string, CalendarPost[]> = $state({});
 let stats: CalendarStats = $state({
 	hasPostInYear: {},
 	hasPostInMonth: {},
@@ -95,20 +93,6 @@ const cells = $derived(
 	})(),
 );
 
-const currentPostId = $derived(
-	getCurrentPostId(window.location.pathname, allPostsData),
-);
-
-const displayedPosts = $derived(
-	(() => {
-		if (selectedDateKey && postDateMap[selectedDateKey]) {
-			return postDateMap[selectedDateKey];
-		}
-		const monthKey = formatMonthKey(currentYear, currentMonth);
-		return postsByMonth[monthKey] || [];
-	})(),
-);
-
 // Functions
 async function fetchCalendarData() {
 	try {
@@ -118,7 +102,6 @@ async function fetchCalendarData() {
 			allPostsData = data;
 			const processed = processPostsData(allPostsData);
 			postDateMap = processed.postDateMap;
-			postsByMonth = processed.postsByMonth;
 			stats = processed.stats;
 
 			const currentPostIdValue = getCurrentPostId(
@@ -300,44 +283,6 @@ onMount(() => {
 			{cells}
 			onCellClick={handleCellClick}
 		/>
-
-		<div class="mt-4">
-			<div
-				class="h-[1px] w-full bg-neutral-200 dark:bg-neutral-700 mb-2"
-				class:hidden={displayedPosts.length === 0}
-			></div>
-			<div
-				class="flex flex-col gap-1 max-h-[9.375rem] overflow-y-auto custom-scrollbar"
-			>
-				{#if displayedPosts.length > 0}
-					{#each displayedPosts as post (post.id)}
-						{@const isCurrentPost = post.id === currentPostId}
-						{@const [, m, d] = post.date.split("-")}
-						{@const dateStr = `${parseInt(m)}-${parseInt(d)}`}
-						<a
-							href="/posts/{post.id}/"
-							class="flex items-center justify-between text-sm transition-colors px-2 py-2 rounded-lg group border border-transparent
-								{isCurrentPost
-								? 'bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/10'
-								: 'text-neutral-700 dark:text-neutral-300 hover:text-[var(--primary)] dark:hover:text-[var(--primary)] hover:bg-[var(--btn-plain-bg-hover)]'}"
-						>
-							<span
-								class="truncate flex-1 font-bold transition-colors"
-								>{post.title}</span
-							>
-							<span
-								class="text-xs ml-2 whitespace-nowrap transition-colors
-								{isCurrentPost
-									? 'text-[var(--primary)]/80'
-									: 'text-neutral-400 group-hover:text-[var(--primary)]/70'}"
-							>
-								{dateStr}
-							</span>
-						</a>
-					{/each}
-				{/if}
-			</div>
-		</div>
 	</div>
 
 	{#if currentView === "month"}
@@ -356,19 +301,3 @@ onMount(() => {
 		</div>
 	{/if}
 </div>
-
-<style>
-	.custom-scrollbar::-webkit-scrollbar {
-		width: 4px;
-	}
-	.custom-scrollbar::-webkit-scrollbar-track {
-		background: transparent;
-	}
-	.custom-scrollbar::-webkit-scrollbar-thumb {
-		background-color: rgba(156, 163, 175, 0.5);
-		border-radius: 2px;
-	}
-	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-		background-color: rgba(156, 163, 175, 0.8);
-	}
-</style>

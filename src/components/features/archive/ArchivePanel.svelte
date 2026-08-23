@@ -18,6 +18,7 @@ categories = params.has("category") ? params.getAll("category") : [];
 const uncategorized = params.get("uncategorized");
 
 let groups = $state<Group[]>([]);
+let loaded = $state(false);
 
 function formatDate(date: Date, dateOnly: boolean) {
 	return formatDateToYYYYMMDD(date, dateOnly).slice(5);
@@ -83,10 +84,27 @@ onMount(async () => {
 	groupedPostsArray.sort((a, b) => b.year - a.year);
 
 	groups = groupedPostsArray;
+	loaded = true;
 });
 </script>
 
 <div class="card-base px-8 py-6">
+	{#if loaded && groups.length === 0}
+		<div class="flex flex-col items-center justify-center gap-10 py-10">
+			<div class="thought-bubble">
+				<span class="thought-text">这里空空如也，快来添加吧</span>
+				<span class="dot dot-1"></span>
+				<span class="dot dot-2"></span>
+				<span class="dot dot-3"></span>
+			</div>
+			<img
+				src="/assets/empty-state/mascot.png"
+				alt=""
+				class="w-28 h-auto max-w-full select-none pointer-events-none"
+				loading="lazy"
+			/>
+		</div>
+	{:else}
 	{#each groups as group (group.year)}
 		<div>
 			<div class="flex flex-row w-full items-center h-15">
@@ -161,4 +179,55 @@ onMount(async () => {
 			{/each}
 		</div>
 	{/each}
+	{/if}
 </div>
+
+<style>
+	.thought-bubble {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 1.5rem;
+		padding: 0.75rem 1.5rem;
+		color: rgb(64 64 64);
+		background: var(--card-bg);
+		box-shadow: 0 6px 20px rgb(0 0 0 / 0.1);
+	}
+
+	:global(.dark) .thought-bubble {
+		color: rgb(212 212 212);
+	}
+
+	.thought-text {
+		font-size: 0.875rem;
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.dot {
+		position: absolute;
+		left: 50%;
+		transform: translateX(-50%);
+		border-radius: 50%;
+		background: var(--card-bg);
+	}
+
+	.dot-1 {
+		bottom: -8px;
+		width: 12px;
+		height: 12px;
+	}
+
+	.dot-2 {
+		bottom: -18px;
+		width: 8px;
+		height: 8px;
+	}
+
+	.dot-3 {
+		bottom: -25px;
+		width: 5px;
+		height: 5px;
+	}
+</style>

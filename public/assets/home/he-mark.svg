@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">H</title>
+  <defs>
+    <linearGradient id="h-gradient" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8fe8ff"/>
+      <stop offset="0.48" stop-color="#c59bff"/>
+      <stop offset="1" stop-color="#ff8fcf"/>
+    </linearGradient>
+    <filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.6" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g fill="none" stroke="url(#h-gradient)" stroke-linecap="round" stroke-linejoin="round" filter="url(#soft-glow)">
+    <path d="M16 13v38" stroke-width="9"/>
+    <path d="M48 13v38" stroke-width="9"/>
+    <path d="M17 33c9-8 20 8 30-2" stroke-width="8"/>
+  </g>
+  <path d="M12 17c5-7 11-10 17-10" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity=".9"/>
+  <circle cx="51" cy="11" r="3" fill="#ffd6ee"/>
+</svg>
