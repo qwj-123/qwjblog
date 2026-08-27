@@ -14,6 +14,7 @@ import { deepMerge } from "./deepMerge";
 const OVERRIDABLE_CONFIGS = [
 	"announcementConfig",
 	"commentConfig",
+	"desktopPetConfig",
 	"expressiveCodeConfig",
 	"footerConfig",
 	"fullscreenWallpaperConfig",

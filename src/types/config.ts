@@ -517,6 +517,23 @@ export interface PioConfig {
 }
 
 /**
+ * 互动式 2D 桌宠配置
+ */
+export interface DesktopPetConfig {
+  enable: boolean; // 是否启用桌宠
+  image: string; // 透明角色素材路径
+  position?: "left" | "right"; // 初始位置
+  height?: number; // 桌面端角色高度（px）
+  draggable?: boolean; // 是否允许拖拽
+  hiddenOnMobile?: boolean; // 是否在移动设备上隐藏
+  dialog?: {
+    welcome?: string; // 首次出现时的欢迎语
+    touch?: string[]; // 点击角色时随机显示的对话
+    close?: string; // 隐藏前的提示
+  };
+}
+
+/**
  * 分享组件配置
  */
 export interface ShareConfig {

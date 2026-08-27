@@ -22,6 +22,7 @@
  * footerConfig                  │ footerConfig.ts            │ 页脚自定义 HTML
  * sidebarLayoutConfig           │ sidebarConfig.ts           │ 侧边栏组件布局（排序、动画、响应式断点）
  * sakuraConfig                  │ effectsConfig.ts           │ 樱花飘落特效（数量、速度、透明度）
+ * desktopPetConfig              │ desktopPetConfig.ts        │ 互动式 2D 桌宠（素材、位置、对话）
  * pioConfig                     │ pioConfig.ts               │ Live2D 看板娘（模型、对话、位置）
  * relatedPostsConfig            │ relatedPostsConfig.ts      │ 相关文章推荐（开关、数量）
  * randomPostsConfig             │ randomPostsConfig.ts       │ 随机文章推荐（开关、数量）
@@ -66,6 +67,7 @@
 import { announcementConfig as announcementDefaults } from "./announcementConfig";
 import { fullscreenWallpaperConfig as fullscreenWallpaperDefaults } from "./backgroundWallpaper";
 import { commentConfig as commentDefaults } from "./commentConfig";
+import { desktopPetConfig as desktopPetDefaults } from "./desktopPetConfig";
 import { sakuraConfig as sakuraDefaults } from "./effectsConfig";
 import { expressiveCodeConfig as expressiveCodeDefaults } from "./expressiveCodeConfig";
 import { footerConfig as footerDefaults } from "./footerConfig";
@@ -125,6 +127,10 @@ export const permalinkConfig = withOverride(
 	"permalinkConfig",
 	permalinkDefaults,
 );
+export const desktopPetConfig = withOverride(
+	"desktopPetConfig",
+	desktopPetDefaults,
+);
 export const pioConfig = withOverride("pioConfig", pioDefaults);
 
 // ─── 个人资料 ───────────────────────────────────────────────
@@ -160,6 +166,7 @@ export const widgetConfigs = {
 	layout: sidebarLayoutConfig,
 	sakura: sakuraConfig,
 	fullscreenWallpaper: fullscreenWallpaperConfig,
+	desktopPet: desktopPetConfig,
 	pio: pioConfig,
 	share: shareConfig,
 	relatedPosts: relatedPostsConfig,

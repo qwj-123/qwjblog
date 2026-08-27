@@ -1,0 +1,646 @@
+---
+import type { DesktopPetConfig } from "@/types/config";
+
+interface Props {
+	config: DesktopPetConfig;
+}
+
+const { config } = Astro.props;
+const position = config.position === "right" ? "right" : "left";
+const height = config.height ?? 320;
+const touchMessages = config.dialog?.touch ?? ["你好呀！"];
+---
+
+<section
+	id="desktop-pet"
+	class:list={["desktop-pet", `desktop-pet--${position}`]}
+	style={`--pet-height: ${height}px`}
+	data-draggable={config.draggable === false ? "false" : "true"}
+	data-hidden-mobile={config.hiddenOnMobile === false ? "false" : "true"}
+	data-welcome={config.dialog?.welcome ?? ""}
+	data-close-message={config.dialog?.close ?? ""}
+	data-touch-messages={JSON.stringify(touchMessages)}
+	aria-label="互动式网站桌宠"
+>
+	<div class="desktop-pet__dialog" role="status" aria-live="polite" hidden>
+		<span class="desktop-pet__dialog-text"></span>
+	</div>
+
+	<button
+		type="button"
+		class="desktop-pet__character"
+		aria-label="与看板娘互动，可拖动角色改变位置"
+		title="点击互动，拖动可改变位置"
+	>
+		<span class="desktop-pet__sprite" aria-hidden="true">
+			<img
+				src={config.image}
+				alt=""
+				width="386"
+				height="1301"
+				draggable="false"
+				loading="lazy"
+				decoding="async"
+			/>
+			<span class="desktop-pet__eyes">
+				<span class="desktop-pet__eyelid desktop-pet__eyelid--left"></span>
+				<span class="desktop-pet__eyelid desktop-pet__eyelid--right"></span>
+			</span>
+		</span>
+	</button>
+
+	<nav class="desktop-pet__controls" aria-label="看板娘快捷操作">
+		<button type="button" data-pet-action="home" aria-label="返回首页" title="返回首页">
+			<span aria-hidden="true">⌂</span>
+		</button>
+		<button type="button" data-pet-action="top" aria-label="返回页面顶部" title="返回顶部">
+			<span aria-hidden="true">↑</span>
+		</button>
+		<button type="button" data-pet-action="reset" aria-label="恢复看板娘初始位置" title="恢复位置">
+			<span aria-hidden="true">↺</span>
+		</button>
+		<button type="button" data-pet-action="close" aria-label="暂时隐藏看板娘" title="暂时隐藏">
+			<span aria-hidden="true">×</span>
+		</button>
+	</nav>
+
+	<button
+		type="button"
+		class="desktop-pet__summon"
+		aria-label="重新显示看板娘"
+		title="叫她回来"
+	>
+		<span aria-hidden="true">♡</span>
+	</button>
+</section>
+
+<script>
+	type PetController = { destroy: () => void };
+	type PetWindow = Window & { __desktopPetController?: PetController };
+
+	const petWindow = window as PetWindow;
+	petWindow.__desktopPetController?.destroy();
+
+	const pets = Array.from(
+		document.querySelectorAll<HTMLElement>("#desktop-pet"),
+	);
+	const pet = pets.at(-1) ?? null;
+	for (const duplicate of pets.slice(0, -1)) duplicate.remove();
+
+	if (pet) {
+		const abortController = new AbortController();
+		const { signal } = abortController;
+		const character = pet.querySelector<HTMLButtonElement>(
+			".desktop-pet__character",
+		);
+		const dialog = pet.querySelector<HTMLElement>(".desktop-pet__dialog");
+		const dialogText = pet.querySelector<HTMLElement>(
+			".desktop-pet__dialog-text",
+		);
+		const controls = pet.querySelector<HTMLElement>(
+			".desktop-pet__controls",
+		);
+		const summon = pet.querySelector<HTMLButtonElement>(
+			".desktop-pet__summon",
+		);
+		const touchMessages = JSON.parse(
+			pet.dataset.touchMessages || "[]",
+		) as string[];
+		const positionStorageKey = "mizuki-desktop-pet-position";
+		const hiddenStorageKey = "mizuki-desktop-pet-hidden";
+		let dialogTimer = 0;
+		let welcomeTimer = 0;
+		let ambientTimer = 0;
+		let blinkTimer = 0;
+		let blinkEndTimer = 0;
+		let winkTimer = 0;
+		let closeTimer = 0;
+		let dragStartX = 0;
+		let dragStartY = 0;
+		let startOffsetX = 0;
+		let startOffsetY = 0;
+		let offsetX = 0;
+		let offsetY = 0;
+		let dragged = false;
+		let dragging = false;
+
+		const setPosition = (x: number, y: number) => {
+			offsetX = x;
+			offsetY = y;
+			pet.style.setProperty("--pet-x", `${Math.round(x)}px`);
+			pet.style.setProperty("--pet-y", `${Math.round(y)}px`);
+		};
+
+		const readStoredPosition = () => {
+			try {
+				const stored = localStorage.getItem(positionStorageKey);
+				if (!stored) return;
+				const parsed = JSON.parse(stored) as { x?: number; y?: number };
+				if (Number.isFinite(parsed.x) && Number.isFinite(parsed.y)) {
+					setPosition(parsed.x ?? 0, parsed.y ?? 0);
+				}
+			} catch {
+				localStorage.removeItem(positionStorageKey);
+			}
+		};
+
+		const savePosition = () => {
+			localStorage.setItem(
+				positionStorageKey,
+				JSON.stringify({ x: offsetX, y: offsetY }),
+			);
+		};
+
+		const showMessage = (message: string, duration = 4200) => {
+			if (
+				!dialog ||
+				!dialogText ||
+				!message ||
+				pet.classList.contains("is-hidden")
+			)
+				return;
+			window.clearTimeout(dialogTimer);
+			dialogText.textContent = message;
+			dialog.hidden = false;
+			requestAnimationFrame(() => dialog.classList.add("is-visible"));
+			dialogTimer = window.setTimeout(() => {
+				dialog.classList.remove("is-visible");
+				window.setTimeout(() => {
+					if (!dialog.classList.contains("is-visible")) dialog.hidden = true;
+				}, 180);
+			}, duration);
+		};
+
+		const randomMessage = () => {
+			if (
+				touchMessages.length === 0 ||
+				pet.classList.contains("is-hidden")
+			)
+				return;
+			const message =
+				touchMessages[Math.floor(Math.random() * touchMessages.length)];
+			showMessage(message);
+		};
+
+		const scheduleBlink = (delay = 3600 + Math.random() * 4200) => {
+			window.clearTimeout(blinkTimer);
+			blinkTimer = window.setTimeout(
+				() => {
+					if (pet.classList.contains("is-hidden") || dragging) {
+						scheduleBlink();
+						return;
+					}
+					pet.classList.add("is-blinking");
+					blinkEndTimer = window.setTimeout(() => {
+						pet.classList.remove("is-blinking");
+						scheduleBlink();
+					}, 145);
+				},
+				delay,
+			);
+		};
+
+		const keepOnScreen = () => {
+			const rect = pet.getBoundingClientRect();
+			let nextX = offsetX;
+			let nextY = offsetY;
+			if (rect.left < 8) nextX += 8 - rect.left;
+			if (rect.right > window.innerWidth - 8)
+				nextX -= rect.right - window.innerWidth + 8;
+			if (rect.top < 8) nextY += 8 - rect.top;
+			if (rect.bottom > window.innerHeight)
+				nextY -= rect.bottom - window.innerHeight;
+			setPosition(nextX, nextY);
+		};
+
+		readStoredPosition();
+		if (sessionStorage.getItem(hiddenStorageKey) === "true") {
+			pet.classList.add("is-hidden");
+		}
+		requestAnimationFrame(keepOnScreen);
+
+		character?.addEventListener(
+			"pointerdown",
+			(event) => {
+				if (pet.dataset.draggable === "false") return;
+				if (event.pointerType === "mouse" && event.button !== 0) return;
+				dragging = true;
+				dragged = false;
+				dragStartX = event.clientX;
+				dragStartY = event.clientY;
+				startOffsetX = offsetX;
+				startOffsetY = offsetY;
+				character.setPointerCapture(event.pointerId);
+			},
+			{ signal },
+		);
+
+		character?.addEventListener(
+			"pointermove",
+			(event) => {
+				if (!dragging) return;
+				const deltaX = event.clientX - dragStartX;
+				const deltaY = event.clientY - dragStartY;
+				if (Math.hypot(deltaX, deltaY) > 5) {
+					dragged = true;
+					pet.classList.add("is-dragging");
+				}
+				setPosition(startOffsetX + deltaX, startOffsetY + deltaY);
+			},
+			{ signal },
+		);
+
+		const endDrag = (event: PointerEvent) => {
+			if (!dragging) return;
+			dragging = false;
+			pet.classList.remove("is-dragging");
+			if (character?.hasPointerCapture(event.pointerId)) {
+				character.releasePointerCapture(event.pointerId);
+			}
+			if (dragged) {
+				keepOnScreen();
+				savePosition();
+			}
+		};
+
+		character?.addEventListener("pointerup", endDrag, { signal });
+		character?.addEventListener("pointercancel", endDrag, { signal });
+		character?.addEventListener(
+			"click",
+			(event) => {
+				if (dragged) {
+					event.preventDefault();
+					dragged = false;
+					return;
+				}
+				pet.classList.remove("is-reacting");
+				pet.classList.remove("is-blinking");
+				pet.classList.remove("is-winking");
+				window.clearTimeout(winkTimer);
+				requestAnimationFrame(() => {
+					pet.classList.add("is-reacting");
+					pet.classList.add("is-winking");
+				});
+				winkTimer = window.setTimeout(
+					() => pet.classList.remove("is-winking"),
+					650,
+				);
+				window.setTimeout(() => pet.classList.remove("is-reacting"), 650);
+				randomMessage();
+			},
+			{ signal },
+		);
+
+		controls?.addEventListener(
+			"click",
+			(event) => {
+				const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
+					"[data-pet-action]",
+				);
+				if (!button) return;
+				const action = button.dataset.petAction;
+				if (action === "home") window.location.href = "/";
+				if (action === "top")
+					window.scrollTo({ top: 0, behavior: "smooth" });
+				if (action === "reset") {
+					setPosition(0, 0);
+					localStorage.removeItem(positionStorageKey);
+					showMessage("已经回到原来的位置啦！");
+				}
+				if (action === "close") {
+					showMessage(pet.dataset.closeMessage || "下次见！", 900);
+					window.clearTimeout(closeTimer);
+					closeTimer = window.setTimeout(() => {
+						pet.classList.add("is-hidden");
+						sessionStorage.setItem(hiddenStorageKey, "true");
+					}, 900);
+				}
+			},
+			{ signal },
+		);
+
+		summon?.addEventListener(
+			"click",
+			() => {
+				pet.classList.remove("is-hidden");
+				sessionStorage.removeItem(hiddenStorageKey);
+				requestAnimationFrame(() => {
+					keepOnScreen();
+					showMessage("我回来啦！");
+				});
+			},
+			{ signal },
+		);
+
+		window.addEventListener("resize", keepOnScreen, { signal });
+		welcomeTimer = window.setTimeout(
+			() => showMessage(pet.dataset.welcome || ""),
+			900,
+		);
+		ambientTimer = window.setInterval(randomMessage, 28000);
+		scheduleBlink(1200);
+
+		petWindow.__desktopPetController = {
+			destroy() {
+				abortController.abort();
+				window.clearTimeout(dialogTimer);
+				window.clearTimeout(welcomeTimer);
+				window.clearTimeout(blinkTimer);
+				window.clearTimeout(blinkEndTimer);
+				window.clearTimeout(winkTimer);
+				window.clearTimeout(closeTimer);
+				window.clearInterval(ambientTimer);
+			},
+		};
+	}
+</script>
+
+<style>
+	.desktop-pet {
+		--pet-x: 0px;
+		--pet-y: 0px;
+		position: fixed;
+		bottom: max(8px, env(safe-area-inset-bottom));
+		z-index: 999;
+		width: calc(var(--pet-height) * 0.297 + 48px);
+		height: var(--pet-height);
+		transform: translate3d(var(--pet-x), var(--pet-y), 0);
+		user-select: none;
+		-webkit-user-select: none;
+		pointer-events: none;
+	}
+
+	.desktop-pet--left {
+		left: 14px;
+	}
+
+	.desktop-pet--right {
+		right: 14px;
+	}
+
+	.desktop-pet__character {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: calc(var(--pet-height) * 0.297);
+		height: var(--pet-height);
+		padding: 0;
+		border: 0;
+		background: transparent;
+		cursor: grab;
+		touch-action: none;
+		pointer-events: auto;
+	}
+
+	.desktop-pet--right .desktop-pet__character {
+		left: auto;
+		right: 0;
+	}
+
+	.desktop-pet__character:focus-visible {
+		outline: 3px solid var(--primary);
+		outline-offset: 4px;
+		border-radius: 999px;
+	}
+
+	.desktop-pet__sprite {
+		position: relative;
+		display: block;
+		width: 100%;
+		height: 100%;
+		transform-origin: 50% 100%;
+		animation: pet-idle 4.8s ease-in-out infinite;
+	}
+
+	.desktop-pet__sprite img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		pointer-events: none;
+		filter: drop-shadow(0 8px 8px rgb(15 23 42 / 22%));
+	}
+
+	.desktop-pet__eyes {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+
+	.desktop-pet__eyelid {
+		position: absolute;
+		top: 7.85%;
+		width: 11.8%;
+		height: 3.25%;
+		border-bottom: max(1px, calc(var(--pet-height) * 0.0055)) solid #3b2b31;
+		border-radius: 10% 10% 58% 58%;
+		background: #f9dfd6;
+		opacity: 0;
+		transition: opacity 45ms linear;
+	}
+
+	.desktop-pet__eyelid--left {
+		left: 30.8%;
+		transform: rotate(3deg);
+	}
+
+	.desktop-pet__eyelid--right {
+		right: 34.5%;
+		transform: rotate(-3deg);
+	}
+
+	.desktop-pet.is-blinking .desktop-pet__eyelid,
+	.desktop-pet.is-winking .desktop-pet__eyelid--right {
+		opacity: 1;
+	}
+
+	.desktop-pet.is-dragging .desktop-pet__character {
+		cursor: grabbing;
+	}
+
+	.desktop-pet.is-dragging .desktop-pet__sprite {
+		animation: none;
+		transform: rotate(2deg) scale(0.98);
+	}
+
+	.desktop-pet.is-reacting .desktop-pet__sprite {
+		animation: pet-react 650ms cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+
+	.desktop-pet__dialog {
+		position: absolute;
+		left: 0;
+		bottom: calc(100% - 24px);
+		width: max-content;
+		max-width: 220px;
+		padding: 10px 13px;
+		border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+		border-radius: 14px 14px 14px 4px;
+		background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+		box-shadow: 0 10px 26px rgb(15 23 42 / 16%);
+		backdrop-filter: blur(12px);
+		color: var(--content-meta);
+		font-size: 0.875rem;
+		line-height: 1.45;
+		opacity: 0;
+		transform: translateY(6px) scale(0.97);
+		transform-origin: left bottom;
+		transition: opacity 180ms ease, transform 180ms ease;
+		pointer-events: none;
+	}
+
+	.desktop-pet--right .desktop-pet__dialog {
+		left: auto;
+		right: 0;
+		border-radius: 14px 14px 4px;
+		transform-origin: right bottom;
+	}
+
+	.desktop-pet__dialog.is-visible {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+
+	.desktop-pet__controls {
+		position: absolute;
+		left: calc(var(--pet-height) * 0.297 + 4px);
+		bottom: 18px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		opacity: 0;
+		transform: translateX(-6px);
+		transition: opacity 160ms ease, transform 160ms ease;
+		pointer-events: none;
+	}
+
+	.desktop-pet--right .desktop-pet__controls {
+		left: auto;
+		right: calc(var(--pet-height) * 0.297 + 4px);
+		transform: translateX(6px);
+	}
+
+	.desktop-pet:hover .desktop-pet__controls,
+	.desktop-pet:focus-within .desktop-pet__controls {
+		opacity: 1;
+		transform: translateX(0);
+		pointer-events: auto;
+	}
+
+	.desktop-pet__controls button {
+		display: grid;
+		place-items: center;
+		width: 38px;
+		height: 38px;
+		padding: 0;
+		border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+		box-shadow: 0 5px 14px rgb(15 23 42 / 14%);
+		backdrop-filter: blur(10px);
+		color: var(--primary);
+		font-size: 1.15rem;
+		font-weight: 700;
+		line-height: 1;
+		cursor: pointer;
+		transition: transform 140ms ease, background-color 140ms ease;
+	}
+
+	.desktop-pet__controls button:hover {
+		transform: translateY(-1px) scale(1.05);
+		background: color-mix(in srgb, var(--primary) 13%, var(--card-bg));
+	}
+
+	.desktop-pet__controls button:focus-visible {
+		outline: 3px solid var(--primary);
+		outline-offset: 2px;
+	}
+
+	.desktop-pet__summon {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		display: none;
+		place-items: center;
+		width: 44px;
+		height: 44px;
+		padding: 0;
+		border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+		box-shadow: 0 6px 18px rgb(15 23 42 / 18%);
+		backdrop-filter: blur(10px);
+		color: var(--primary);
+		font-size: 1.35rem;
+		font-weight: 700;
+		cursor: pointer;
+		pointer-events: auto;
+		transition: transform 160ms ease, background-color 160ms ease;
+	}
+
+	.desktop-pet--right .desktop-pet__summon {
+		left: auto;
+		right: 0;
+	}
+
+	.desktop-pet__summon:hover {
+		transform: translateY(-2px) scale(1.06);
+		background: color-mix(in srgb, var(--primary) 13%, var(--card-bg));
+	}
+
+	.desktop-pet__summon:focus-visible {
+		outline: 3px solid var(--primary);
+		outline-offset: 2px;
+	}
+
+	.desktop-pet.is-hidden .desktop-pet__character,
+	.desktop-pet.is-hidden .desktop-pet__dialog,
+	.desktop-pet.is-hidden .desktop-pet__controls {
+		display: none;
+	}
+
+	.desktop-pet.is-hidden .desktop-pet__summon {
+		display: grid;
+	}
+
+	@keyframes pet-idle {
+		0%,
+		100% {
+			transform: translateY(0) rotate(-0.35deg) scaleY(1);
+		}
+		50% {
+			transform: translateY(-5px) rotate(0.35deg) scaleY(1.006);
+		}
+	}
+
+	@keyframes pet-react {
+		0%,
+		100% {
+			transform: translateY(0) scale(1);
+		}
+		35% {
+			transform: translateY(-14px) scale(1.03, 0.97);
+		}
+		65% {
+			transform: translateY(2px) scale(0.98, 1.02);
+		}
+	}
+
+	@media (width <= 767px) {
+		.desktop-pet[data-hidden-mobile="true"] {
+			display: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.desktop-pet,
+		.desktop-pet *,
+		.desktop-pet *::before,
+		.desktop-pet *::after {
+			scroll-behavior: auto !important;
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>
