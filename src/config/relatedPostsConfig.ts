@@ -2,7 +2,7 @@ import type { RelatedPostsConfig } from "../types/config";
 
 // 相关文章配置
 export const relatedPostsConfig: RelatedPostsConfig = {
-	enable: true,
+	enable: false,
 	maxCount: 5,
 
 	// 评分权重配置 — 各维度权重值归一化后使用，无需手动凑到 1.0

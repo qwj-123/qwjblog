@@ -4,15 +4,12 @@ import type { CollectionEntry } from "astro:content";
 import path from "node:path";
 import Comment from "@components/comment/index.astro";
 import {
-	LastModified,
 	PostMeta,
 	PostNavigation,
-	RandomPosts,
 	RelatedPosts,
 	ShareCard,
 } from "@components/features/posts";
 import { ReadingTime, WordCount } from "@components/features/posts/atoms";
-import License from "@components/misc/License.astro";
 import Markdown from "@components/misc/Markdown.astro";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { renderPostContent } from "@utils/content-renderer";
@@ -22,9 +19,7 @@ import { getPostPublicDescription } from "@utils/post-card-content";
 import { resolvePostCoverSource } from "@utils/post-cover-source";
 import { getFileDirFromPath, removeFileExtension } from "@utils/url-utils";
 import {
-	licenseConfig,
 	permalinkConfig,
-	randomPostsConfig,
 	relatedPostsConfig,
 	shareConfig,
 } from "src/config";
@@ -357,43 +352,11 @@ const jsonLd = {
 				)
 			}
 
-			{
-				licenseConfig.enable && (
-					<div
-						id="license-component"
-						class:list={[
-							"encrypted-hidden-wrapper",
-							{ "encrypted-hidden": isEncrypted },
-						]}
-					>
-						<License
-							title={entry.data.title}
-							id={entry.id}
-							pubDate={entry.data.published}
-							pubDateOnly={entry.data._publishedDateOnly}
-
-							author={entry.data.author}
-							sourceLink={entry.data.sourceLink}
-							licenseName={entry.data.licenseName}
-							licenseUrl={entry.data.licenseUrl}
-							class="mb-6 rounded-xl license-container onload-animation"
-						/>
-					</div>
-				)
-			}
 		</div>
 	</div>
 
 	<!-- 评论 -->
 	<Comment post={entry} />
-
-	{
-		siteConfig.showLastModified && (
-			<LastModified
-				updatedDate={entry.data.updated || entry.data.published}
-			/>
-		)
-	}
 
 	<PostNavigation
 		prevSlug={entry.data.nextSlug}
@@ -402,19 +365,11 @@ const jsonLd = {
 		nextTitle={entry.data.prevTitle}
 	/>
 
-	<!-- 相关文章与随机文章 -->
+	<!-- 相关文章 -->
 	{
-		(relatedPostsConfig.enable || randomPostsConfig.enable) && (
+		relatedPostsConfig.enable && relatedPosts.length > 0 && (
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-				{relatedPostsConfig.enable && relatedPosts.length > 0 && (
-					<RelatedPosts relatedPosts={relatedPosts} />
-				)}
-				{randomPostsConfig.enable && (
-					<RandomPosts
-						excludeIds={[entry.id]}
-						maxCount={randomPostsConfig.maxCount}
-					/>
-				)}
+				<RelatedPosts relatedPosts={relatedPosts} />
 			</div>
 		)
 	}

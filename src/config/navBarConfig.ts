@@ -139,8 +139,7 @@ export const navBarConfig: NavBarConfig = {
       children: [
         {
           name: "GitHub",
-          // 收到个人 GitHub 用户名后，将此地址替换为个人主页。
-          url: "https://github.com/",
+          url: "https://github.com/qwj-123",
           external: true, // 外部链接，新标签页打开
           icon: "fa7-brands:github",
         },

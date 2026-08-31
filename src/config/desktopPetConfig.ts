@@ -1,12 +1,18 @@
 import type { DesktopPetConfig } from "../types/config";
 
 export const desktopPetConfig: DesktopPetConfig = {
-	enable: true,
+	enable: false,
 	image: "/assets/desktop-pet/character-base.png",
+	waveImage: "/assets/desktop-pet/character-wave-frame.png",
 	position: "left",
 	height: 250,
 	draggable: true,
 	hiddenOnMobile: true,
+	motion: {
+		mouseTracking: true,
+		autoWalk: true,
+		walkRange: 150,
+	},
 	dialog: {
 		welcome: "欢迎回来，今天也一起加油吧！",
 		touch: [

@@ -17,6 +17,9 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 	style={`--pet-height: ${height}px`}
 	data-draggable={config.draggable === false ? "false" : "true"}
 	data-hidden-mobile={config.hiddenOnMobile === false ? "false" : "true"}
+	data-mouse-tracking={config.motion?.mouseTracking === false ? "false" : "true"}
+	data-auto-walk={config.motion?.autoWalk === false ? "false" : "true"}
+	data-walk-range={Math.max(0, config.motion?.walkRange ?? 140)}
 	data-welcome={config.dialog?.welcome ?? ""}
 	data-close-message={config.dialog?.close ?? ""}
 	data-touch-messages={JSON.stringify(touchMessages)}
@@ -33,18 +36,36 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 		title="点击互动，拖动可改变位置"
 	>
 		<span class="desktop-pet__sprite" aria-hidden="true">
-			<img
-				src={config.image}
-				alt=""
-				width="386"
-				height="1301"
-				draggable="false"
-				loading="lazy"
-				decoding="async"
-			/>
-			<span class="desktop-pet__eyes">
-				<span class="desktop-pet__eyelid desktop-pet__eyelid--left"></span>
-				<span class="desktop-pet__eyelid desktop-pet__eyelid--right"></span>
+			<span class="desktop-pet__art">
+				<img
+					class="desktop-pet__image desktop-pet__image--base"
+					src={config.image}
+					alt=""
+					width="386"
+					height="1301"
+					draggable="false"
+					loading="lazy"
+					decoding="async"
+				/>
+				{
+					config.waveImage && (
+						<img
+							class="desktop-pet__image desktop-pet__image--wave"
+							src={config.waveImage}
+							alt=""
+							width="386"
+							height="1301"
+							draggable="false"
+							loading="lazy"
+							decoding="async"
+						/>
+					)
+				}
+				<span class="desktop-pet__eyes">
+					<span class="desktop-pet__eyelid desktop-pet__eyelid--left"></span>
+					<span class="desktop-pet__eyelid desktop-pet__eyelid--right"></span>
+				</span>
+				<span class="desktop-pet__cheeks"></span>
 			</span>
 		</span>
 	</button>
@@ -114,7 +135,13 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 		let blinkTimer = 0;
 		let blinkEndTimer = 0;
 		let winkTimer = 0;
+		let reactionTimer = 0;
 		let closeTimer = 0;
+		let walkTimer = 0;
+		let walkFrame = 0;
+		let lookFrame = 0;
+		let pointerX = 0;
+		let pointerY = 0;
 		let dragStartX = 0;
 		let dragStartY = 0;
 		let startOffsetX = 0;
@@ -123,6 +150,16 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 		let offsetY = 0;
 		let dragged = false;
 		let dragging = false;
+		let walking = false;
+		const reducedMotion = window.matchMedia(
+			"(prefers-reduced-motion: reduce)",
+		);
+		const reactionClasses = [
+			"is-reacting",
+			"is-reacting-shy",
+			"is-reacting-curious",
+			"is-waving",
+		];
 
 		const setPosition = (x: number, y: number) => {
 			offsetX = x;
@@ -149,6 +186,50 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 				positionStorageKey,
 				JSON.stringify({ x: offsetX, y: offsetY }),
 			);
+		};
+
+		const clearReaction = () => {
+			for (const className of reactionClasses) pet.classList.remove(className);
+		};
+
+		const resetLook = () => {
+			pet.style.setProperty("--pet-look-x", "0px");
+			pet.style.setProperty("--pet-look-y", "0px");
+			pet.style.setProperty("--pet-look-rotate", "0deg");
+		};
+
+		const updateLook = () => {
+			lookFrame = 0;
+			if (
+				pet.dataset.mouseTracking === "false" ||
+				reducedMotion.matches ||
+				dragging ||
+				walking ||
+				pet.classList.contains("is-hidden") ||
+				!character
+			) {
+				resetLook();
+				return;
+			}
+			const rect = character.getBoundingClientRect();
+			const centerX = rect.left + rect.width / 2;
+			const centerY = rect.top + rect.height * 0.18;
+			const dx = pointerX - centerX;
+			const dy = pointerY - centerY;
+			const nx = Math.max(-1, Math.min(1, dx / 360));
+			const ny = Math.max(-1, Math.min(1, dy / 280));
+			pet.style.setProperty("--pet-look-x", `${(nx * 2.4).toFixed(2)}px`);
+			pet.style.setProperty("--pet-look-y", `${(ny * 1.2).toFixed(2)}px`);
+			pet.style.setProperty(
+				"--pet-look-rotate",
+				`${(nx * 0.8).toFixed(2)}deg`,
+			);
+		};
+
+		const queueLookUpdate = (event: PointerEvent) => {
+			pointerX = event.clientX;
+			pointerY = event.clientY;
+			if (!lookFrame) lookFrame = window.requestAnimationFrame(updateLook);
 		};
 
 		const showMessage = (message: string, duration = 4200) => {
@@ -200,6 +281,74 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 			);
 		};
 
+		const cancelWalk = () => {
+			window.clearTimeout(walkTimer);
+			if (walkFrame) window.cancelAnimationFrame(walkFrame);
+			walkFrame = 0;
+			walking = false;
+			pet.classList.remove("is-walking", "is-walking-left");
+		};
+
+		const scheduleWalk = (delay = 10000 + Math.random() * 10000) => {
+			window.clearTimeout(walkTimer);
+			if (pet.dataset.autoWalk === "false") return;
+			walkTimer = window.setTimeout(() => {
+				if (
+					reducedMotion.matches ||
+					dragging ||
+					pet.classList.contains("is-hidden") ||
+					window.innerWidth <= 767
+				) {
+					scheduleWalk();
+					return;
+				}
+				const rect = pet.getBoundingClientRect();
+				const range = Math.max(40, Number(pet.dataset.walkRange) || 140);
+				const preferredDirection = Math.random() < 0.5 ? -1 : 1;
+				const distance = 50 + Math.random() * Math.max(20, range - 50);
+				const minDelta = 8 - rect.left;
+				const maxDelta = window.innerWidth - 8 - rect.right;
+				let delta = Math.max(
+					minDelta,
+					Math.min(maxDelta, preferredDirection * distance),
+				);
+				if (Math.abs(delta) < 24) {
+					delta = Math.max(
+						minDelta,
+						Math.min(maxDelta, -preferredDirection * distance),
+					);
+				}
+				if (Math.abs(delta) < 18) {
+					scheduleWalk();
+					return;
+				}
+				const startX = offsetX;
+				const targetX = offsetX + delta;
+				const duration = Math.max(1400, Math.min(3600, Math.abs(delta) * 22));
+				let startTime = 0;
+				walking = true;
+				resetLook();
+				pet.classList.add("is-walking");
+				pet.classList.toggle("is-walking-left", delta < 0);
+				const step = (time: number) => {
+					if (!walking) return;
+					if (!startTime) startTime = time;
+					const progress = Math.min(1, (time - startTime) / duration);
+					const eased = 0.5 - Math.cos(progress * Math.PI) / 2;
+					setPosition(startX + (targetX - startX) * eased, offsetY);
+					if (progress < 1) {
+						walkFrame = window.requestAnimationFrame(step);
+						return;
+					}
+					walkFrame = 0;
+					walking = false;
+					pet.classList.remove("is-walking", "is-walking-left");
+					scheduleWalk();
+				};
+				walkFrame = window.requestAnimationFrame(step);
+			}, delay);
+		};
+
 		const keepOnScreen = () => {
 			const rect = pet.getBoundingClientRect();
 			let nextX = offsetX;
@@ -224,7 +373,9 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 			(event) => {
 				if (pet.dataset.draggable === "false") return;
 				if (event.pointerType === "mouse" && event.button !== 0) return;
+				cancelWalk();
 				dragging = true;
+				resetLook();
 				dragged = false;
 				dragStartX = event.clientX;
 				dragStartY = event.clientY;
@@ -261,6 +412,7 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 				keepOnScreen();
 				savePosition();
 			}
+			scheduleWalk();
 		};
 
 		character?.addEventListener("pointerup", endDrag, { signal });
@@ -273,19 +425,22 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 					dragged = false;
 					return;
 				}
-				pet.classList.remove("is-reacting");
+				clearReaction();
 				pet.classList.remove("is-blinking");
 				pet.classList.remove("is-winking");
 				window.clearTimeout(winkTimer);
+				window.clearTimeout(reactionTimer);
+				const reaction =
+					reactionClasses[Math.floor(Math.random() * reactionClasses.length)];
 				requestAnimationFrame(() => {
-					pet.classList.add("is-reacting");
-					pet.classList.add("is-winking");
+					pet.classList.add(reaction);
+					if (reaction !== "is-waving") pet.classList.add("is-winking");
 				});
 				winkTimer = window.setTimeout(
 					() => pet.classList.remove("is-winking"),
 					650,
 				);
-				window.setTimeout(() => pet.classList.remove("is-reacting"), 650);
+				reactionTimer = window.setTimeout(clearReaction, 760);
 				randomMessage();
 			},
 			{ signal },
@@ -303,11 +458,15 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 				if (action === "top")
 					window.scrollTo({ top: 0, behavior: "smooth" });
 				if (action === "reset") {
+					cancelWalk();
 					setPosition(0, 0);
 					localStorage.removeItem(positionStorageKey);
 					showMessage("已经回到原来的位置啦！");
+					scheduleWalk();
 				}
 				if (action === "close") {
+					cancelWalk();
+					resetLook();
 					showMessage(pet.dataset.closeMessage || "下次见！", 900);
 					window.clearTimeout(closeTimer);
 					closeTimer = window.setTimeout(() => {
@@ -327,18 +486,31 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 				requestAnimationFrame(() => {
 					keepOnScreen();
 					showMessage("我回来啦！");
+					scheduleWalk(5000);
 				});
 			},
 			{ signal },
 		);
 
 		window.addEventListener("resize", keepOnScreen, { signal });
+		window.addEventListener("pointermove", queueLookUpdate, {
+			signal,
+			passive: true,
+		});
+		document.addEventListener(
+			"visibilitychange",
+			() => {
+				if (document.hidden) resetLook();
+			},
+			{ signal },
+		);
 		welcomeTimer = window.setTimeout(
 			() => showMessage(pet.dataset.welcome || ""),
 			900,
 		);
 		ambientTimer = window.setInterval(randomMessage, 28000);
 		scheduleBlink(1200);
+		scheduleWalk(6500);
 
 		petWindow.__desktopPetController = {
 			destroy() {
@@ -348,8 +520,12 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 				window.clearTimeout(blinkTimer);
 				window.clearTimeout(blinkEndTimer);
 				window.clearTimeout(winkTimer);
+				window.clearTimeout(reactionTimer);
 				window.clearTimeout(closeTimer);
+				window.clearTimeout(walkTimer);
 				window.clearInterval(ambientTimer);
+				if (walkFrame) window.cancelAnimationFrame(walkFrame);
+				if (lookFrame) window.cancelAnimationFrame(lookFrame);
 			},
 		};
 	}
@@ -359,6 +535,9 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 	.desktop-pet {
 		--pet-x: 0px;
 		--pet-y: 0px;
+		--pet-look-x: 0px;
+		--pet-look-y: 0px;
+		--pet-look-rotate: 0deg;
 		position: fixed;
 		bottom: max(8px, env(safe-area-inset-bottom));
 		z-index: 999;
@@ -412,18 +591,58 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 		animation: pet-idle 4.8s ease-in-out infinite;
 	}
 
-	.desktop-pet__sprite img {
+	.desktop-pet__art {
+		position: relative;
+		display: block;
+		width: 100%;
+		height: 100%;
+		transform: translate3d(var(--pet-look-x), var(--pet-look-y), 0)
+			rotate(var(--pet-look-rotate));
+		transform-origin: 50% 14%;
+		transition: transform 180ms ease-out;
+	}
+
+	.desktop-pet__art img {
+		position: absolute;
+		inset: 0;
 		display: block;
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
 		pointer-events: none;
 		filter: drop-shadow(0 8px 8px rgb(15 23 42 / 22%));
+		transition: opacity 120ms ease;
+	}
+
+	.desktop-pet__image--wave {
+		opacity: 0;
+	}
+
+	.desktop-pet.is-waving .desktop-pet__image--base {
+		opacity: 0;
+	}
+
+	.desktop-pet.is-waving .desktop-pet__image--wave {
+		opacity: 1;
 	}
 
 	.desktop-pet__eyes {
 		position: absolute;
 		inset: 0;
+		pointer-events: none;
+	}
+
+	.desktop-pet__cheeks {
+		position: absolute;
+		top: 10.4%;
+		left: 26.5%;
+		width: 45%;
+		height: 2.4%;
+		background:
+			radial-gradient(ellipse at 8% 50%, rgb(244 114 140 / 58%), transparent 68%),
+			radial-gradient(ellipse at 92% 50%, rgb(244 114 140 / 58%), transparent 68%);
+		opacity: 0;
+		transition: opacity 140ms ease;
 		pointer-events: none;
 	}
 
@@ -465,6 +684,30 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 
 	.desktop-pet.is-reacting .desktop-pet__sprite {
 		animation: pet-react 650ms cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+
+	.desktop-pet.is-reacting-shy .desktop-pet__sprite {
+		animation: pet-shy 760ms ease-in-out;
+	}
+
+	.desktop-pet.is-reacting-shy .desktop-pet__cheeks {
+		opacity: 1;
+	}
+
+	.desktop-pet.is-reacting-curious .desktop-pet__sprite {
+		animation: pet-curious 760ms ease-in-out;
+	}
+
+	.desktop-pet.is-waving .desktop-pet__sprite {
+		animation: pet-wave 760ms ease-in-out;
+	}
+
+	.desktop-pet.is-walking .desktop-pet__sprite {
+		animation: pet-walk 420ms ease-in-out infinite;
+	}
+
+	.desktop-pet.is-walking .desktop-pet__art {
+		transition: none;
 	}
 
 	.desktop-pet__dialog {
@@ -623,6 +866,52 @@ const touchMessages = config.dialog?.touch ?? ["你好呀！"];
 		}
 		65% {
 			transform: translateY(2px) scale(0.98, 1.02);
+		}
+	}
+
+	@keyframes pet-shy {
+		0%,
+		100% {
+			transform: translateY(0) rotate(0) scale(1);
+		}
+		45% {
+			transform: translateY(3px) rotate(-2.2deg) scale(0.985, 1.015);
+		}
+	}
+
+	@keyframes pet-curious {
+		0%,
+		100% {
+			transform: translateY(0) rotate(0) scale(1);
+		}
+		38% {
+			transform: translateY(-4px) rotate(2.8deg) scale(1.01);
+		}
+		68% {
+			transform: translateY(-2px) rotate(-1deg) scale(1.005);
+		}
+	}
+
+	@keyframes pet-walk {
+		0%,
+		100% {
+			transform: translateY(0) rotate(-0.8deg) scale(1);
+		}
+		50% {
+			transform: translateY(-5px) rotate(0.8deg) scale(1.012, 0.99);
+		}
+	}
+
+	@keyframes pet-wave {
+		0%,
+		100% {
+			transform: translateY(0) rotate(0) scale(1);
+		}
+		35% {
+			transform: translateY(-5px) rotate(-1.2deg) scale(1.012);
+		}
+		68% {
+			transform: translateY(-2px) rotate(0.8deg) scale(1.006);
 		}
 	}
 

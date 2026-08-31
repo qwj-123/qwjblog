@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Q</title>
+  <defs>
+    <linearGradient id="q-gradient" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#73e8ff"/>
+      <stop offset="0.52" stop-color="#b58cff"/>
+      <stop offset="1" stop-color="#ff8dcc"/>
+    </linearGradient>
+  </defs>
+  <circle cx="30" cy="29" r="20" fill="none" stroke="url(#q-gradient)" stroke-width="9"/>
+  <path d="M41.5 40.5 54 53" fill="none" stroke="url(#q-gradient)" stroke-width="9" stroke-linecap="round"/>
+</svg>

@@ -522,10 +522,16 @@ export interface PioConfig {
 export interface DesktopPetConfig {
   enable: boolean; // 是否启用桌宠
   image: string; // 透明角色素材路径
+  waveImage?: string; // 挥手动作素材路径
   position?: "left" | "right"; // 初始位置
   height?: number; // 桌面端角色高度（px）
   draggable?: boolean; // 是否允许拖拽
   hiddenOnMobile?: boolean; // 是否在移动设备上隐藏
+  motion?: {
+    mouseTracking?: boolean; // 是否轻微朝鼠标方向转动
+    autoWalk?: boolean; // 是否在页面底部随机散步
+    walkRange?: number; // 单次散步最大距离（px）
+  };
   dialog?: {
     welcome?: string; // 首次出现时的欢迎语
     touch?: string[]; // 点击角色时随机显示的对话

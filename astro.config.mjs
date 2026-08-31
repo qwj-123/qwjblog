@@ -12,7 +12,6 @@ import icon from "astro-icon";
 import { pluginLanguageLogo } from "ec-lang-logo";
 import "katex/dist/contrib/mhchem.mjs";
 import { oddmisc } from "oddmisc";
-import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeCodeGroup from "rehype-code-group";
 import rehypeComponents from "rehype-components";
 import rehypeKatex from "rehype-katex";
@@ -287,24 +286,6 @@ export default defineConfig({
 							example: (x, y) => AdmonitionComponent(x, y, "note"),
 							quote: (x, y) => AdmonitionComponent(x, y, "note"),
 							cite: (x, y) => AdmonitionComponent(x, y, "note"),
-						},
-					},
-				],
-				[
-					rehypeAutolinkHeadings,
-					{
-						behavior: "append",
-						properties: {
-							className: ["anchor"],
-						},
-						content: {
-							type: "element",
-							tagName: "span",
-							properties: {
-								className: ["anchor-icon"],
-								"data-pagefind-ignore": true,
-							},
-							children: [{ type: "text", value: "#" }],
 						},
 					},
 				],
