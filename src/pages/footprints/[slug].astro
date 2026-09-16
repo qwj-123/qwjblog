@@ -2,7 +2,7 @@
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { Icon } from "astro-icon/components";
 
-import { footprintEntries, type FootprintEntry } from "../../data/footprints";
+import { type FootprintEntry, footprintEntries } from "../../data/footprints";
 
 export function getStaticPaths() {
 	return footprintEntries.map((entry) => ({

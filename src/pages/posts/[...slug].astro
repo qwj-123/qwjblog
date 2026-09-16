@@ -18,11 +18,7 @@ import { hasCustomPermalink, initPostIdMap } from "@utils/permalink-utils";
 import { getPostPublicDescription } from "@utils/post-card-content";
 import { resolvePostCoverSource } from "@utils/post-cover-source";
 import { getFileDirFromPath, removeFileExtension } from "@utils/url-utils";
-import {
-	permalinkConfig,
-	relatedPostsConfig,
-	shareConfig,
-} from "src/config";
+import { permalinkConfig, relatedPostsConfig, shareConfig } from "src/config";
 
 import Image from "../../components/atoms/Image/Image.astro";
 import Encryptor from "../../components/features/auth/Encryptor.astro";

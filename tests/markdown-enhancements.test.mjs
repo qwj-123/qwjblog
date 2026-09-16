@@ -18,7 +18,10 @@ import {
 import { remarkAutoImageGrid } from "../src/plugins/remark-auto-image-grid.mjs";
 import { remarkFixGithubAdmonitions } from "../src/plugins/remark-fix-github-admonitions.js";
 import { remarkPlantuml } from "../src/plugins/remark-plantuml.mjs";
-import { remarkWikiLink } from "../src/plugins/remark-wiki-link.mjs";
+import {
+	DEFAULT_WIKI_POSTS_DIRECTORY,
+	remarkWikiLink,
+} from "../src/plugins/remark-wiki-link.mjs";
 import {
 	readCodeCollapseConfig,
 	shouldAutoCollapse,
@@ -88,6 +91,13 @@ describe("PlantUML markdown pipeline", () => {
 });
 
 describe("Markdown AST enhancements", () => {
+	it("uses src/content/posts as the default Wiki Link content directory", () => {
+		assert.equal(
+			DEFAULT_WIKI_POSTS_DIRECTORY,
+			fileURLToPath(new URL("../src/content/posts/", import.meta.url)),
+		);
+	});
+
 	it("enhances Markdown images without discarding existing attributes", () => {
 		const image = {
 			type: "element",
@@ -282,6 +292,9 @@ describe("Markdown AST enhancements", () => {
 	});
 
 	it("turns standalone wiki links into covered cards and inline links", async () => {
+		const postsDirectory = fileURLToPath(
+			new URL("./fixtures/wiki-posts/", import.meta.url),
+		);
 		const tree = {
 			type: "root",
 			children: [
@@ -300,12 +313,9 @@ describe("Markdown AST enhancements", () => {
 				},
 			],
 		};
-		await remarkWikiLink()(tree, {
+		await remarkWikiLink({ postsDirectory })(tree, {
 			path: fileURLToPath(
-				new URL(
-					"../src/content/posts/content-pipeline-fixture.mdx",
-					import.meta.url,
-				),
+				new URL("./fixtures/wiki-posts/current.md", import.meta.url),
 			),
 		});
 		assert.equal(tree.children[0].data.hName, "a");
@@ -313,7 +323,7 @@ describe("Markdown AST enhancements", () => {
 		assert.equal(tree.children[0].children[0].data.hName, "span");
 		assert.equal(
 			tree.children[0].children[0].children[0].url,
-			"./guide/cover.webp",
+			"./guide/cover.svg",
 		);
 		assert.equal(
 			tree.children[0].children[0].data.hProperties.dataNoEnhance,

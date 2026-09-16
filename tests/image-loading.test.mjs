@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
-import { fileURLToPath } from "node:url";
-import sharp from "sharp";
+
+import {
+	DEFAULT_COVER_URL,
+	LOCAL_PLAYLIST,
+} from "../src/components/widgets/music-player/constants.ts";
 
 const bannerSource = await readFile(
 	new URL("../src/components/layout/Banner.astro", import.meta.url),
@@ -30,13 +33,6 @@ const viewportImageSource = await readFile(
 );
 const imageSourceUtils = await readFile(
 	new URL("../src/utils/image-source-utils.ts", import.meta.url),
-	"utf8",
-);
-const musicConstants = await readFile(
-	new URL(
-		"../src/components/widgets/music-player/constants.ts",
-		import.meta.url,
-	),
 	"utf8",
 );
 const musicCoverSource = await readFile(
@@ -86,20 +82,29 @@ describe("Default image loading boundary", () => {
 		);
 	});
 
-	it("ships player-sized local music covers while leaving remote covers dynamic", async () => {
-		assert.equal((musicConstants.match(/\.webp\?url/g) ?? []).length, 4);
-		assert.match(musicConstants, /cover: dazbeeCover/);
-		assert.doesNotMatch(musicCoverSource, /fetchpriority="high"/);
+	it("keeps local music assets deployable and uses the shared fallback cover", async () => {
+		assert.ok(LOCAL_PLAYLIST.length > 0);
+		assert.match(DEFAULT_COVER_URL, /^\//);
+		const fallbackCover = await readFile(
+			new URL(`../public${DEFAULT_COVER_URL}`, import.meta.url),
+		);
+		assert.ok(fallbackCover.length > 0);
 
-		for (const name of ["cl", "dazbee", "hitori", "xryx"]) {
-			const path = new URL(
-				`../src/assets/music/cover/${name}.webp`,
-				import.meta.url,
+		for (const song of LOCAL_PLAYLIST) {
+			assert.ok(song.title.trim());
+			assert.ok(song.artist.trim());
+			assert.equal(song.cover, DEFAULT_COVER_URL);
+			assert.match(song.url, /^assets\/music\/url\/[^?#]+$/);
+			assert.ok(song.duration > 0);
+			const audio = await readFile(
+				new URL(`../public/${song.url}`, import.meta.url),
 			);
-			const metadata = await sharp(fileURLToPath(path)).metadata();
-			assert.ok((metadata.width ?? Number.POSITIVE_INFINITY) <= 192);
-			assert.ok((metadata.height ?? Number.POSITIVE_INFINITY) <= 192);
+			assert.ok(audio.length > 0);
 		}
+
+		assert.match(musicCoverSource, /loading="lazy"/);
+		assert.match(musicCoverSource, /fetchpriority="low"/);
+		assert.doesNotMatch(musicCoverSource, /fetchpriority="high"/);
 	});
 
 	it("keeps existing default-image mirrors synchronized with public files", async () => {

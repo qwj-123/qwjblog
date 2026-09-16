@@ -11,7 +11,9 @@ import matter from "gray-matter";
 import { matchesNoReferrerDomain } from "../utils/image-referrer.ts";
 import { resolvePostCoverSource } from "../utils/post-cover-source.ts";
 
-const POSTS_DIR = fileURLToPath(new URL("../content/posts/", import.meta.url));
+export const DEFAULT_WIKI_POSTS_DIRECTORY = fileURLToPath(
+	new URL("../content/posts/", import.meta.url),
+);
 const MARKDOWN_EXTENSION = /\.(?:md|mdx|markdown)$/i;
 const WIKI_LINK = /!?\[\[([^[\]\n]+)\]\]/g;
 const STANDALONE_WIKI_LINK = /^\[\[([^[\]\n]+)\]\]$/;
@@ -23,7 +25,7 @@ const SKIPPED_NODE_TYPES = new Set([
 	"mdxJsxFlowElement",
 	"mdxJsxTextElement",
 ]);
-let metaCache = { expiresAt: 0, metas: [] };
+const metaCache = new Map();
 
 function normalizeContentPath(value) {
 	const normalized = value
@@ -44,18 +46,20 @@ function normalizeContentPath(value) {
 		: segments.join("/");
 }
 
-function toContentPath(filePath) {
+function toContentPath(filePath, postsDirectory) {
 	return path
-		.relative(POSTS_DIR, filePath)
+		.relative(postsDirectory, filePath)
 		.replaceAll("\\", "/")
 		.replace(MARKDOWN_EXTENSION, "");
 }
 
-function collectPostMetas() {
+function collectPostMetas(postsDirectory = DEFAULT_WIKI_POSTS_DIRECTORY) {
+	const resolvedDirectory = path.resolve(postsDirectory);
 	const now = Date.now();
-	if (now < metaCache.expiresAt) return metaCache.metas;
+	const cached = metaCache.get(resolvedDirectory);
+	if (cached && now < cached.expiresAt) return cached.metas;
 	const metas = [];
-	const stack = [POSTS_DIR];
+	const stack = [resolvedDirectory];
 	while (stack.length > 0) {
 		const directory = stack.pop();
 		let entries = [];
@@ -73,7 +77,7 @@ function collectPostMetas() {
 					if (!statSync(filePath).isFile()) continue;
 					metas.push({
 						filePath,
-						contentPath: toContentPath(filePath),
+						contentPath: toContentPath(filePath, resolvedDirectory),
 						data: matter(readFileSync(filePath, "utf8")).data ?? {},
 					});
 				} catch {
@@ -82,7 +86,7 @@ function collectPostMetas() {
 			}
 		}
 	}
-	metaCache = { expiresAt: now + 1000, metas };
+	metaCache.set(resolvedDirectory, { expiresAt: now + 1000, metas });
 	return metas;
 }
 
@@ -393,6 +397,11 @@ export function remarkWikiLink(options = {}) {
 	return async (tree, file) => {
 		if (options.enable === false) return;
 		const currentFilePath = file?.path || file?.history?.at(-1);
-		await transform(tree, collectPostMetas(), options, currentFilePath);
+		await transform(
+			tree,
+			collectPostMetas(options.postsDirectory),
+			options,
+			currentFilePath,
+		);
 	};
 }

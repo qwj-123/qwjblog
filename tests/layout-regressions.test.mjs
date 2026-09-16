@@ -139,8 +139,10 @@ describe("Global style loading regressions", () => {
 			"global Expressive Code styles must not be duplicated by encryption",
 		);
 		assert.match(globalStyleCheckSource, /about\/index\.html/);
-		assert.match(globalStyleCheckSource, /\.card-github/);
-		assert.match(globalStyleCheckSource, /\.custom-md \.image-grid/);
+		assert.match(
+			globalStyleCheckSource,
+			/\["\.custom-md", "Markdown content styles"\]/,
+		);
 	});
 });
 

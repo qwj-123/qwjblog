@@ -25,8 +25,7 @@ const fakeResult: SearchResult[] = [
 		meta: {
 			title: "这是开发环境中的模拟搜索结果",
 		},
-		excerpt:
-			"完整搜索索引不会在 <mark>开发</mark> 环境中生成。",
+		excerpt: "完整搜索索引不会在 <mark>开发</mark> 环境中生成。",
 	},
 	{
 		url: url("/"),
