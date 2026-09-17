@@ -1,4 +1,4 @@
-name: Validate Tencent Cloud Deployment (Dry Run)
+name: Deploy to Tencent Cloud
 
 on:
   push:
@@ -112,7 +112,7 @@ jobs:
           unexpected=$(find dist ! -type d ! -type f -print -quit)
           test -z "$unexpected"
 
-      - name: Validate deployment settings and preview synchronization over SSH
+      - name: Validate deployment settings and synchronize over SSH
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
@@ -206,6 +206,7 @@ jobs:
             --itemize-changes --stats --timeout=120
             --rsh="ssh -F '$ssh_dir/config' -o StrictHostKeyChecking=yes"
           )
-          # First-run safety mode: preview only. No production files are modified.
-          # The same arguments will be used later when the real sync is enabled.
+          # Preview first; `set -e` stops before production sync if this fails.
           rsync "${rsync_args[@]}" --dry-run -- dist/ "deploy-target:$DEPLOY_PATH/"
+          # Production sync uses exactly the same validated arguments.
+          rsync "${rsync_args[@]}" -- dist/ "deploy-target:$DEPLOY_PATH/"
