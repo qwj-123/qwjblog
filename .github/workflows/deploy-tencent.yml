@@ -1,0 +1,211 @@
+name: Validate Tencent Cloud Deployment (Dry Run)
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize the entire workflow; never cancel a deployment halfway through.
+concurrency:
+  group: tencent-production
+  cancel-in-progress: false
+
+env:
+  ENABLE_CONTENT_SYNC: "false"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      artifact_id: ${{ steps.artifact.outputs.artifact-id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.15.0"
+          package-manager-cache: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "11.5.3"
+          run_install: false
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Strict gates: existing formatting/test failures must be fixed separately.
+      # Unlike `pnpm lint`, this command does not rewrite source files.
+      - name: Check code without rewriting files
+        run: pnpm exec biome check ./src
+
+      - name: Check Astro and types
+        run: pnpm check
+
+      - name: Run existing tests
+        run: pnpm test
+
+      - name: Build static site
+        run: pnpm build
+
+      - name: Validate and package dist
+        run: |
+          set -euo pipefail
+          test -s dist/index.html
+          test -d dist/_astro
+          test -d dist/pagefind
+          # A static artifact must contain only regular files/directories.
+          unexpected=$(find dist ! -type d ! -type f -print -quit)
+          test -z "$unexpected"
+          # Fail rather than publish common private/configuration files.
+          unexpected=$(find dist \( -name '.env' -o -name '.env.*' -o -name '.git' -o -name '*.key' -o -name '*.pem' \) -print -quit)
+          test -z "$unexpected"
+          tar -czf site.tar.gz -C dist .
+          sha256sum site.tar.gz > site.tar.gz.sha256
+
+      - name: Save the build for deployment
+        id: artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: tencent-site-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            site.tar.gz
+            site.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Download this run's build
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact_id }}
+
+      - name: Verify and unpack the build
+        run: |
+          set -euo pipefail
+          sha256sum --check site.tar.gz.sha256
+          mkdir dist
+          tar -xzf site.tar.gz -C dist --no-same-owner --no-same-permissions
+          test -s dist/index.html
+          test -d dist/_astro
+          test -d dist/pagefind
+          unexpected=$(find dist ! -type d ! -type f -print -quit)
+          test -z "$unexpected"
+
+      - name: Validate deployment settings and preview synchronization over SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_SSH_KEY:?Missing DEPLOY_SSH_KEY}"
+          : "${DEPLOY_HOST:?Missing DEPLOY_HOST}"
+          : "${DEPLOY_USER:?Missing DEPLOY_USER}"
+          : "${DEPLOY_PATH:?Missing DEPLOY_PATH}"
+          : "${DEPLOY_PORT:?Missing DEPLOY_PORT}"
+          : "${DEPLOY_KNOWN_HOSTS:?Missing DEPLOY_KNOWN_HOSTS}"
+          # Deliberately support DNS/IPv4 and a single site under /var/www only.
+          # This is a safety boundary, not a hardcoded production destination.
+          [[ "$DEPLOY_HOST" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ ]]
+          [[ "$DEPLOY_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          [[ "$DEPLOY_USER" != root ]]
+          [[ "$DEPLOY_PORT" =~ ^[0-9]{1,5}$ ]]
+          (( 10#$DEPLOY_PORT >= 1 && 10#$DEPLOY_PORT <= 65535 ))
+          DEPLOY_PORT=$((10#$DEPLOY_PORT))
+          [[ "$DEPLOY_PATH" =~ ^/var/www/[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
+          command -v ssh
+          command -v rsync
+
+          umask 077
+          ssh_dir=$(mktemp -d "$RUNNER_TEMP/tencent-ssh.XXXXXX")
+          cleanup() {
+            rm -f -- "$ssh_dir/key" "$ssh_dir/known_hosts" "$ssh_dir/config"
+            rmdir -- "$ssh_dir"
+          }
+          trap cleanup EXIT
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          unset DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS
+          chmod 600 "$ssh_dir/key" "$ssh_dir/known_hosts"
+          host_lookup="$DEPLOY_HOST"
+          if [[ "$DEPLOY_PORT" != 22 ]]; then
+            host_lookup="[$DEPLOY_HOST]:$DEPLOY_PORT"
+          fi
+          ssh-keygen -F "$host_lookup" -f "$ssh_dir/known_hosts" > /dev/null
+          cat > "$ssh_dir/config" <<EOF
+          Host deploy-target
+            HostName $DEPLOY_HOST
+            User $DEPLOY_USER
+            Port $DEPLOY_PORT
+            IdentityFile "$ssh_dir/key"
+            UserKnownHostsFile "$ssh_dir/known_hosts"
+            GlobalKnownHostsFile /dev/null
+            StrictHostKeyChecking yes
+            IdentitiesOnly yes
+            BatchMode yes
+            PasswordAuthentication no
+            ConnectTimeout 15
+            ServerAliveInterval 15
+            ServerAliveCountMax 3
+          EOF
+
+          # Read-only preflight. Never create or repair production permissions.
+          ssh -F "$ssh_dir/config" deploy-target "bash -s -- '$DEPLOY_PATH' '$DEPLOY_USER'" <<'REMOTE'
+          set -euo pipefail
+          target=$1
+          expected_user=$2
+          actual_user=$(whoami)
+          printf 'Remote deployment identity: %s\n' "$actual_user"
+          id
+          test "$actual_user" = "$expected_user"
+          command -v rsync
+          test -d "$target"
+          test -w "$target"
+          test -x "$target"
+          test "$(realpath -e -- "$target")" = "$target"
+          test -g "$target"
+          target_group=$(stat -c '%g' -- "$target")
+          # Exclude server-managed ACME files from both checks and transfer.
+          unexpected=$(find "$target" -path "$target/.well-known" -prune -o -type l -print -quit)
+          test -z "$unexpected"
+          unexpected=$(find "$target" -path "$target/.well-known" -prune -o -type d \( ! -group "$target_group" -o ! -perm -2070 \) -print -quit)
+          test -z "$unexpected"
+          REMOTE
+
+          rsync_args=(
+            --recursive --times --compress --omit-dir-times
+            --no-perms --no-owner --no-group
+            --chmod=Dug=rwx,Do=rx,Fug=rw,Fo=r
+            --rsync-path='umask 0002 && exec rsync'
+            --protect-args --delay-updates --delete-delay
+            --exclude=/.well-known/
+            --itemize-changes --stats --timeout=120
+            --rsh="ssh -F '$ssh_dir/config' -o StrictHostKeyChecking=yes"
+          )
+          # First-run safety mode: preview only. No production files are modified.
+          # The same arguments will be used later when the real sync is enabled.
+          rsync "${rsync_args[@]}" --dry-run -- dist/ "deploy-target:$DEPLOY_PATH/"
